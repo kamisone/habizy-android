@@ -72,8 +72,10 @@ import com.habizy.app.ui.theme.LightText
 import com.habizy.app.ui.theme.ScreenBackground
 import com.habizy.app.ui.theme.SubtitleText
 import com.habizy.app.ui.theme.tagColor
+import com.habizy.app.data.repository.StorageRepository
 import com.habizy.app.ui.theme.toComposeColor
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 
 @Composable
 fun CreateReportScreen(
@@ -85,6 +87,7 @@ fun CreateReportScreen(
 
     val api = ApiClient.apiService
     val reportRepository = remember { ReportRepository(api) }
+    val storageRepository = remember { StorageRepository(api) }
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -142,12 +145,25 @@ fun CreateReportScreen(
                     return@launch
                 }
 
+                val uploadedUrls = mutableListOf<String>()
+                for (bitmap in photos) {
+                    val stream = ByteArrayOutputStream()
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                    storageRepository.uploadImage(stream.toByteArray(), "reports")
+                        .onSuccess { uploadedUrls.add(it) }
+                        .onFailure {
+                            errorText = "Echec upload photo"
+                            isLoading = false
+                            return@launch
+                        }
+                }
+
                 val body = CreateReportRequest(
                     colocationId = colocationId,
                     title = title.trim(),
                     description = description.trim().ifBlank { null },
                     tags = selectedTags.toList().ifEmpty { null },
-                    photoUrls = emptyList(),
+                    photoUrls = uploadedUrls,
                 )
 
                 val result = reportRepository.create(body)

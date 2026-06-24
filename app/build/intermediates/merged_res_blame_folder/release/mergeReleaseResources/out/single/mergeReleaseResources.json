@@ -1,0 +1,82 @@
+[
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.habizy.app-main-74:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/xml_network_security_config.xml.flat",
+        "source": "com.habizy.app-main-74:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/xml_data_extraction_rules.xml.flat",
+        "source": "com.habizy.app-main-74:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/xml_file_paths.xml.flat",
+        "source": "com.habizy.app-main-74:/xml/file_paths.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/xml_backup_rules.xml.flat",
+        "source": "com.habizy.app-main-74:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.habizy.app-main-74:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-74:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/drawable_logo_habizy.xml.flat",
+        "source": "com.habizy.app-main-74:/drawable/logo_habizy.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/drawable_ic_launcher_logo.png.flat",
+        "source": "com.habizy.app-main-74:/drawable/ic_launcher_logo.png"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.habizy.app-main-74:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.habizy.app-release-73:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.habizy.app-main-74:/drawable/ic_launcher_background.xml"
+    }
+]

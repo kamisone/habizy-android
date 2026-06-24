@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">1017011600132</string>
+    <string name="google_api_key" translatable="false">AIzaSyBPx4v5nq8huPqvYlXcWCB3g3AgxLbsMyI</string>
+    <string name="google_app_id" translatable="false">1:1017011600132:android:fdf88b6adbcc59fe6eee51</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBPx4v5nq8huPqvYlXcWCB3g3AgxLbsMyI</string>
+    <string name="google_storage_bucket" translatable="false">habizy-82225.firebasestorage.app</string>
+    <string name="project_id" translatable="false">habizy-82225</string>
+</resources>
