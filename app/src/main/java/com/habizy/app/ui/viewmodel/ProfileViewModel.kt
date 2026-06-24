@@ -41,6 +41,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -71,10 +74,13 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
         load()
     }
 
-    fun load() {
+    fun load(isRefresh: Boolean = false, silent: Boolean = false) {
+        if (silent && (_isLoading.value || _isRefreshing.value)) return
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = true else _isLoading.value = true
+                _errorMessage.value = null
+            }
 
             val meDeferred = async { authRepository.getMe() }
             val colocationDeferred = async { colocationRepository.getMyColocation() }
@@ -85,8 +91,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             if (me != null) {
                 _user.value = me
             } else {
-                _errorMessage.value = "Impossible de charger le profil"
-                _isLoading.value = false
+                if (!silent) {
+                    _errorMessage.value = "Impossible de charger le profil"
+                    if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+                }
                 return@launch
             }
 
@@ -99,9 +107,14 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 receiptsResult.onSuccess { _receipts.value = it }
             }
 
-            _isLoading.value = false
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+            }
         }
     }
+
+    fun refresh() = load(isRefresh = true)
+    fun silentRefresh() = load(silent = true)
 
     fun changePassword(currentPassword: String, newPassword: String) {
         viewModelScope.launch {

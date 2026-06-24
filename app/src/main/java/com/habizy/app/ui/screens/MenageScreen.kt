@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,11 +39,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +64,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -105,6 +110,9 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -118,10 +126,13 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
         load()
     }
 
-    fun load() {
+    fun load(isRefresh: Boolean = false, silent: Boolean = false) {
+        if (silent && (_isLoading.value || _isRefreshing.value)) return
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = true else _isLoading.value = true
+                _errorMessage.value = null
+            }
             try {
                 val me = api.getMe()
                 _currentUserId.value = me.id
@@ -132,16 +143,17 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
                 val week = api.getMenageWeek(colocationId)
                 _weekData.value = week
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Erreur chargement menage"
+                if (!silent) _errorMessage.value = e.message ?: "Erreur chargement menage"
             } finally {
-                _isLoading.value = false
+                if (!silent) {
+                    if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+                }
             }
         }
     }
 
-    fun refresh() {
-        load()
-    }
+    fun refresh() = load(isRefresh = true)
+    fun silentRefresh() = load(silent = true)
 
     fun markDone(comment: String?) {
         viewModelScope.launch {
@@ -228,12 +240,21 @@ fun MenageScreen() {
     val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val isAdmin by viewModel.isAdmin.collectAsStateWithLifecycle()
 
-    val scope = rememberCoroutineScope()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.silentRefresh()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     var showCommentSheet by remember { mutableStateOf(false) }
     var commentText by remember { mutableStateOf("") }
     var showEditTaskSheet by remember { mutableStateOf(false) }
     var editTaskText by remember { mutableStateOf("") }
-    var isRefreshing by remember { mutableStateOf(false) }
 
     // Derive state from weekData
     val data = weekData
@@ -265,11 +286,7 @@ fun MenageScreen() {
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            viewModel.refresh()
-            isRefreshing = false
-        },
+        onRefresh = { viewModel.refresh() },
         modifier = Modifier
             .fillMaxSize()
             .background(ScreenBackground),
@@ -601,7 +618,7 @@ fun MenageScreen() {
 
                     // Row 1: Mon-Thu
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         for (i in 0..3) {
@@ -610,14 +627,14 @@ fun MenageScreen() {
                                 dateNumber = weekDates[i],
                                 isToday = isToday(data.weekStart, i),
                                 doneMember = doneMemberByDay[i],
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
                             )
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     // Row 2: Fri-Sun + spacer
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         for (i in 4..6) {
@@ -626,7 +643,7 @@ fun MenageScreen() {
                                 dateNumber = weekDates[i],
                                 isToday = isToday(data.weekStart, i),
                                 doneMember = doneMemberByDay[i],
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).fillMaxHeight(),
                             )
                         }
                         // Spacer cell for alignment
@@ -758,7 +775,7 @@ fun MenageScreen() {
                 Spacer(modifier = Modifier.height(14.dp))
                 OutlinedTextField(
                     value = commentText,
-                    onValueChange = { commentText = it },
+                    onValueChange = { if (it.length <= 50) commentText = it },
                     placeholder = {
                         Text(
                             text = "Ex: Passe l'aspirateur et la serpillere",
@@ -771,6 +788,16 @@ fun MenageScreen() {
                         fontSize = 15.sp,
                         color = DarkText,
                     ),
+                    supportingText = {
+                        Text(
+                            text = "${commentText.length}/50",
+                            fontFamily = DmSansFamily,
+                            fontSize = 12.sp,
+                            color = SubtitleText,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
                     shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = CardBackground,
@@ -916,6 +943,7 @@ private fun DayCell(
             .background(bgColor)
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top,
     ) {
         Text(
             text = dayLabel,
@@ -960,13 +988,13 @@ private fun DayCell(
                 overflow = TextOverflow.Ellipsis,
             )
             if (!doneMember.comment.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = doneMember.comment,
                     fontFamily = DmSansFamily,
                     fontSize = 9.sp,
                     color = SubtitleText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }

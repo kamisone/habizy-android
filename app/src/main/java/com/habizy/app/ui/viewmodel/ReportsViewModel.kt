@@ -34,6 +34,9 @@ class ReportsViewModel(application: Application) : AndroidViewModel(application)
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -44,15 +47,20 @@ class ReportsViewModel(application: Application) : AndroidViewModel(application)
         load()
     }
 
-    fun load() {
+    fun load(isRefresh: Boolean = false, silent: Boolean = false) {
+        if (silent && (_isLoading.value || _isRefreshing.value)) return
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = true else _isLoading.value = true
+                _errorMessage.value = null
+            }
 
             val colocationId = tokenManager.getColocationId()
             if (colocationId == null) {
-                _errorMessage.value = "Aucune colocation"
-                _isLoading.value = false
+                if (!silent) {
+                    _errorMessage.value = "Aucune colocation"
+                    if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+                }
                 return@launch
             }
 
@@ -61,24 +69,22 @@ class ReportsViewModel(application: Application) : AndroidViewModel(application)
             val tagsDeferred = async { reportRepository.getTags(colocationId) }
 
             val me = meDeferred.await().getOrNull()
-            if (me != null) {
-                _isAdmin.value = me.isAdmin
-            }
+            if (me != null) _isAdmin.value = me.isAdmin
 
             reportsDeferred.await()
                 .onSuccess { _reports.value = it }
-                .onFailure { e -> _errorMessage.value = e.message ?: "Erreur chargement signalements" }
+                .onFailure { e -> if (!silent) _errorMessage.value = e.message ?: "Erreur chargement signalements" }
 
-            tagsDeferred.await()
-                .onSuccess { _tags.value = it }
+            tagsDeferred.await().onSuccess { _tags.value = it }
 
-            _isLoading.value = false
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+            }
         }
     }
 
-    fun refresh() {
-        load()
-    }
+    fun refresh() = load(isRefresh = true)
+    fun silentRefresh() = load(silent = true)
 
     fun setTagFilter(tag: String?) {
         _tagFilter.value = tag

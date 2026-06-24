@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +60,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.habizy.app.ui.components.LocalSnackbarHost
@@ -93,6 +97,7 @@ fun ProfileScreen(
     val colocation by viewModel.colocation.collectAsStateWithLifecycle()
     val members by viewModel.members.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
 
@@ -102,6 +107,15 @@ fun ProfileScreen(
 
     val snackbarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.silentRefresh()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     var showPasswordSheet by remember { mutableStateOf(false) }
     var showNameSheet by remember { mutableStateOf(false) }
@@ -129,8 +143,8 @@ fun ProfileScreen(
     }
 
     PullToRefreshBox(
-        isRefreshing = isLoading,
-        onRefresh = { viewModel.load() },
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.refresh() },
         modifier = Modifier
             .fillMaxSize()
             .background(ScreenBackground),

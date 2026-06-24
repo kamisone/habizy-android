@@ -33,6 +33,9 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _isAdmin = MutableStateFlow(false)
     val isAdmin: StateFlow<Boolean> = _isAdmin.asStateFlow()
 
@@ -52,15 +55,20 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
         load()
     }
 
-    fun load() {
+    fun load(isRefresh: Boolean = false, silent: Boolean = false) {
+        if (silent && (_isLoading.value || _isRefreshing.value)) return
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = true else _isLoading.value = true
+                _errorMessage.value = null
+            }
 
             val colocationId = tokenManager.getColocationId()
             if (colocationId == null) {
-                _errorMessage.value = "Aucune colocation"
-                _isLoading.value = false
+                if (!silent) {
+                    _errorMessage.value = "Aucune colocation"
+                    if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+                }
                 return@launch
             }
 
@@ -75,7 +83,7 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
             val rotationResult = rotationDeferred.await()
 
             receiptsResult.onSuccess { _receipts.value = it }
-                .onFailure { _errorMessage.value = it.message ?: "Erreur chargement tickets" }
+                .onFailure { if (!silent) _errorMessage.value = it.message ?: "Erreur chargement tickets" }
 
             statsResult.onSuccess { _stats.value = it }
 
@@ -89,9 +97,14 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
                 _isMyTurn.value = currentShopper?.user?.id == me.id
             }
 
-            _isLoading.value = false
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
+            }
         }
     }
+
+    fun refresh() = load(isRefresh = true)
+    fun silentRefresh() = load(silent = true)
 
     fun deleteReceipt(receiptId: String) {
         viewModelScope.launch {

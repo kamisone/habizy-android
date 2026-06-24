@@ -1,8 +1,11 @@
 package com.habizy.app.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -101,6 +104,20 @@ fun CreateReportScreen(
 
     // Context for TokenManager
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) cameraLauncher.launch(null)
+    }
+
+    fun launchCamera() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            cameraLauncher.launch(null)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
     // Load available tags
     LaunchedEffect(Unit) {
@@ -251,7 +268,7 @@ fun CreateReportScreen(
                         .size(80.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(BorderColor.copy(alpha = 0.5f))
-                        .clickable { cameraLauncher.launch(null) },
+                        .clickable { launchCamera() },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(

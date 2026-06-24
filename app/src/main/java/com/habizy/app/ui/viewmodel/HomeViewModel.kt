@@ -58,25 +58,35 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _state = MutableStateFlow<HomeState>(HomeState.Loading)
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         load()
     }
 
-    fun load() {
+    fun load(isRefresh: Boolean = false, silent: Boolean = false) {
+        if (silent && (_isRefreshing.value || _state.value is HomeState.Loading)) return
         viewModelScope.launch {
-            _state.value = HomeState.Loading
+            if (!silent) {
+                if (isRefresh) _isRefreshing.value = true else _state.value = HomeState.Loading
+            }
 
             val meResult = authRepository.getMe()
             val me = meResult.getOrNull()
             if (me == null) {
-                _state.value = HomeState.Error(meResult.exceptionOrNull()?.message ?: "Impossible de charger le profil")
+                if (!isRefresh && !silent) {
+                    _state.value = HomeState.Error(meResult.exceptionOrNull()?.message ?: "Impossible de charger le profil")
+                }
+                if (!silent) _isRefreshing.value = false
                 return@launch
             }
 
             val colocationResult = colocationRepository.getMyColocation()
             val colocationDetail = colocationResult.getOrNull()
             if (colocationDetail == null) {
-                _state.value = HomeState.NoColocation
+                if (!isRefresh && !silent) _state.value = HomeState.NoColocation
+                if (!silent) _isRefreshing.value = false
                 return@launch
             }
 
@@ -120,12 +130,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     recentReports = reports.take(3)
                 )
             )
+            if (!silent) _isRefreshing.value = false
         }
     }
 
-    fun refresh() {
-        load()
-    }
+    fun refresh() = load(isRefresh = true)
+    fun silentRefresh() = load(silent = true)
 
     fun createColocation(name: String) {
         viewModelScope.launch {

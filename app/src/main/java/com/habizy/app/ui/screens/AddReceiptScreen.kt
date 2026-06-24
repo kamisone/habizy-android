@@ -1,10 +1,13 @@
 package com.habizy.app.ui.screens
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -166,6 +169,20 @@ fun AddReceiptScreen(
         }
     }
 
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) cameraLauncher.launch(null)
+    }
+
+    fun launchCamera() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            cameraLauncher.launch(null)
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
     // Check turn on appear
     LaunchedEffect(Unit) {
         try {
@@ -276,7 +293,7 @@ fun AddReceiptScreen(
                             .clip(RoundedCornerShape(16.dp))
                             .background(LightCardBg)
                             .border(1.dp, BorderColor, RoundedCornerShape(16.dp))
-                            .clickable { cameraLauncher.launch(null) },
+                            .clickable { launchCamera() },
                         contentAlignment = Alignment.Center,
                     ) {
                         if (capturedBitmap != null) {
@@ -296,7 +313,7 @@ fun AddReceiptScreen(
                                     .size(36.dp)
                                     .clip(CircleShape)
                                     .background(Color.Black.copy(alpha = 0.5f))
-                                    .clickable { cameraLauncher.launch(null) },
+                                    .clickable { launchCamera() },
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(

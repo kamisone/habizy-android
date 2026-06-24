@@ -4,8 +4,8 @@
         "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/network_security_config.xml"
     },
     {
-        "merged": "com.habizy.app-debug-76:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "com.habizy.app-main-78:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "com.habizy.app-debug-76:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-hdpi/ic_launcher_round.png"
     },
     {
         "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/xml_backup_rules.xml.flat",
@@ -16,6 +16,42 @@
         "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/data_extraction_rules.xml"
     },
     {
+        "merged": "com.habizy.app-debug-76:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.habizy.app-main-78:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.habizy.app-main-78:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/drawable_ic_launcher_background.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
         "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/xml_file_paths.xml.flat",
         "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/file_paths.xml"
     },
@@ -24,15 +60,31 @@
         "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/drawable/logo_habizy.xml"
     },
     {
-        "merged": "com.habizy.app-debug-76:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.habizy.app-main-78:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "com.habizy.app-debug-76:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-xhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "com.habizy.app-main-78:/drawable/ic_launcher_foreground.xml"
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_background.xml.flat",
-        "source": "com.habizy.app-main-78:/drawable/ic_launcher_background.xml"
+        "merged": "com.habizy.app-debug-76:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_logo.png.flat",
+        "source": "com.habizy.app-main-78:/drawable/ic_launcher_logo.png"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.habizy.app-main-78:/mipmap-mdpi/ic_launcher_round.png"
     }
 ]

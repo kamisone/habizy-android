@@ -2,11 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Cagnotte.iml" filepath="$PROJECT_DIR$/.idea/modules/Cagnotte.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.androidTest.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/Cagnotte.app.unitTest.iml" />
     </modules>
   </component>
 </project>
