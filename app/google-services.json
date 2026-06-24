@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1017011600132",
+    "project_id": "habizy-82225",
+    "storage_bucket": "habizy-82225.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1017011600132:android:fdf88b6adbcc59fe6eee51",
+        "android_client_info": {
+          "package_name": "com.habizy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPx4v5nq8huPqvYlXcWCB3g3AgxLbsMyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,38 @@
+[
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/xml_network_security_config.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.habizy.app-main-78:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/xml_backup_rules.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/xml_data_extraction_rules.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/xml_file_paths.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/xml/file_paths.xml"
+    },
+    {
+        "merged": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-debug-76:/drawable_logo_habizy.xml.flat",
+        "source": "/Users/mbenkhouya/.gradle/daemon/9.3.1/com.habizy.app-main-78:/drawable/logo_habizy.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.habizy.app-main-78:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.habizy.app-main-78:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.habizy.app-debug-76:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.habizy.app-main-78:/drawable/ic_launcher_background.xml"
+    }
+]
