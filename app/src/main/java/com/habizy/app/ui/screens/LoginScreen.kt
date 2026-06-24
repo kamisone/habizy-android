@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -230,6 +229,7 @@ fun LoginScreen() {
             onClick = { viewModel.login(email.trim(), password) },
             enabled = !isLoginLoading && email.isNotBlank() && password.isNotBlank(),
             shape = RoundedCornerShape(18.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = GreenPrimary,
                 contentColor = Color.White,
@@ -238,8 +238,7 @@ fun LoginScreen() {
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
-                .shadow(6.dp, RoundedCornerShape(18.dp)),
+                .height(54.dp),
         ) {
             if (isLoginLoading) {
                 CircularProgressIndicator(
@@ -357,6 +356,7 @@ fun LoginScreen() {
             onClick = { viewModel.joinColocation(inviteCode.trim()) },
             enabled = !isJoinLoading && inviteCode.isNotBlank(),
             shape = RoundedCornerShape(18.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = DarkText,
                 contentColor = Color.White,
@@ -365,8 +365,7 @@ fun LoginScreen() {
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
-                .shadow(6.dp, RoundedCornerShape(18.dp)),
+                .height(54.dp),
         ) {
             if (isJoinLoading) {
                 CircularProgressIndicator(
