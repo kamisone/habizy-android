@@ -3,6 +3,8 @@ package com.habizy.app.ui.screens
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
@@ -42,6 +45,8 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,9 +57,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -238,6 +248,7 @@ fun ReportDetailScreen(
     var commentText by remember { mutableStateOf("") }
     var showEditSheet by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var fullscreenImageIndex by remember { mutableIntStateOf(-1) }
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Initial load
@@ -268,6 +279,105 @@ fun ReportDetailScreen(
             scope.launch {
                 snackbarHost.showTyped(it, SnackbarType.SUCCESS)
                 viewModel.clearSuccessMessage()
+            }
+        }
+    }
+
+    // Fullscreen photo viewer
+    val photoUrls = detail?.photoUrls
+    if (fullscreenImageIndex >= 0 && !photoUrls.isNullOrEmpty()) {
+        Dialog(
+            onDismissRequest = { fullscreenImageIndex = -1 },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+            ),
+        ) {
+            val pagerState = androidx.compose.foundation.pager.rememberPagerState(
+                initialPage = fullscreenImageIndex,
+                pageCount = { photoUrls.size },
+            )
+            var scale by remember { mutableFloatStateOf(1f) }
+            var offsetX by remember { mutableFloatStateOf(0f) }
+            var offsetY by remember { mutableFloatStateOf(0f) }
+            val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+                scale = (scale * zoomChange).coerceIn(1f, 5f)
+                if (scale > 1f) {
+                    offsetX += panChange.x
+                    offsetY += panChange.y
+                } else {
+                    offsetX = 0f
+                    offsetY = 0f
+                }
+            }
+            // Reset zoom when page changes
+            androidx.compose.runtime.LaunchedEffect(pagerState.currentPage) {
+                scale = 1f; offsetX = 0f; offsetY = 0f
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+            ) {
+                androidx.compose.foundation.pager.HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = scale == 1f,
+                ) { page ->
+                    AsyncImage(
+                        model = photoUrls[page],
+                        contentDescription = "Photo ${page + 1}",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                translationX = offsetX,
+                                translationY = offsetY,
+                            )
+                            .transformable(state = transformableState),
+                    )
+                }
+                // Dot indicator
+                if (photoUrls.size > 1) {
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        repeat(photoUrls.size) { index ->
+                            val isSelected = pagerState.currentPage == index
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isSelected) 8.dp else 6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isSelected) Color.White
+                                        else Color.White.copy(alpha = 0.4f)
+                                    ),
+                            )
+                        }
+                    }
+                }
+                IconButton(
+                    onClick = { fullscreenImageIndex = -1 },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Fermer",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         }
     }
@@ -308,6 +418,7 @@ fun ReportDetailScreen(
                         imageUrls = report.photoUrls,
                         height = 220.dp,
                         cornerRadius = 18.dp,
+                        onImageClick = { index -> fullscreenImageIndex = index },
                     )
                     Spacer(Modifier.height(16.dp))
                 }

@@ -1,6 +1,7 @@
 package com.habizy.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -35,6 +36,7 @@ fun ImageCarousel(
     modifier: Modifier = Modifier,
     height: Dp = 200.dp,
     cornerRadius: Dp = 18.dp,
+    onImageClick: ((index: Int) -> Unit)? = null,
 ) {
     if (imageUrls.isEmpty()) return
 
@@ -54,7 +56,12 @@ fun ImageCarousel(
                 model = imageUrls[page],
                 contentDescription = "Image ${page + 1}",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (onImageClick != null) Modifier.clickable { onImageClick(page) }
+                        else Modifier
+                    ),
             )
         }
 
