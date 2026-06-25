@@ -299,6 +299,7 @@ private fun SetupColocationView(
                 onClick = { onCreateColocation(colocationName.trim()) },
                 enabled = colocationName.isNotBlank(),
                 shape = RoundedCornerShape(18.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = GreenPrimary,
                     contentColor = Color.White,
@@ -307,8 +308,7 @@ private fun SetupColocationView(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
-                    .shadow(6.dp, RoundedCornerShape(18.dp)),
+                    .height(54.dp),
             ) {
                 Text(
                     text = "Creer",

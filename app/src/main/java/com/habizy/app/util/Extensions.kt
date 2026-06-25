@@ -1,34 +1,65 @@
 package com.habizy.app.util
 
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.Locale
 
-/**
- * Returns a user-friendly error message from a [Throwable].
- *
- * Maps common exception types to French strings so they can be shown directly in the UI.
- */
 fun Throwable.userMessage(): String = when (this) {
-    is java.net.UnknownHostException -> "Pas de connexion Internet"
-    is java.net.SocketTimeoutException -> "Le serveur met trop de temps a repondre"
+    is java.net.UnknownHostException,
+    is java.net.NoRouteToHostException -> "Pas de connexion Internet"
+
+    is java.net.SocketTimeoutException -> "Le serveur met trop de temps à répondre"
+
     is java.net.ConnectException -> "Impossible de joindre le serveur"
+
     is retrofit2.HttpException -> {
-        when (code()) {
-            401 -> "Session expiree, veuillez vous reconnecter"
-            403 -> "Acces refuse"
-            404 -> "Ressource introuvable"
-            409 -> "Conflit : cette operation a deja ete effectuee"
-            422 -> "Donnees invalides"
-            429 -> "Trop de requetes, veuillez reessayer plus tard"
-            in 500..599 -> "Erreur serveur, veuillez reessayer plus tard"
-            else -> "Erreur (${ code() })"
+        val bodyMsg = try {
+            val raw = response()?.errorBody()?.string()
+            if (!raw.isNullOrBlank()) {
+                val json = org.json.JSONObject(raw)
+                // NestJS returns message as String or String[]
+                runCatching { json.getString("message") }.getOrNull()
+                    ?: runCatching { json.getJSONArray("message").getString(0) }.getOrNull()
+            } else null
+        } catch (_: Exception) { null }
+
+        mapServerError(code(), bodyMsg)
+    }
+
+    else -> "Une erreur inattendue est survenue"
+}
+
+private fun mapServerError(statusCode: Int, serverMsg: String?): String {
+    if (!serverMsg.isNullOrBlank()) {
+        val s = serverMsg.lowercase()
+        return when {
+            "invalid credentials" in s || "credentials" in s -> "Email ou mot de passe incorrect"
+            "user not found" in s                            -> "Aucun compte trouvé avec cet email"
+            "current password" in s                          -> "Mot de passe actuel incorrect"
+            "email already" in s || "already registered" in s -> "Cette adresse email est déjà utilisée"
+            "invitation" in s || "invite" in s               -> "Code d'invitation invalide ou expiré"
+            "not found" in s                                 -> "Ressource introuvable"
+            "expired" in s                                   -> "Session expirée, veuillez vous reconnecter"
+            "access denied" in s || "forbidden" in s         -> "Accès refusé"
+            "conflict" in s                                  -> "Cette action a déjà été effectuée"
+            "validation" in s || "invalid" in s              -> "Données invalides"
+            else                                             -> mapStatusCode(statusCode)
         }
     }
-    else -> this.localizedMessage ?: "Une erreur inattendue est survenue"
+    return mapStatusCode(statusCode)
+}
+
+private fun mapStatusCode(code: Int): String = when (code) {
+    400  -> "Requête invalide"
+    401  -> "Email ou mot de passe incorrect"
+    403  -> "Accès refusé"
+    404  -> "Ressource introuvable"
+    409  -> "Cette action a déjà été effectuée"
+    422  -> "Données invalides"
+    429  -> "Trop de requêtes, veuillez réessayer"
+    in 500..599 -> "Erreur serveur, veuillez réessayer"
+    else -> "Une erreur inattendue est survenue"
 }
 
 /**

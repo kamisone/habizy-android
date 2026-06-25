@@ -10,6 +10,7 @@ import com.habizy.app.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.habizy.app.util.userMessage
 import kotlinx.coroutines.launch
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -41,7 +42,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             result.onSuccess {
                 registerFcmDevice()
             }.onFailure { e ->
-                _loginError.value = e.message ?: "Erreur de connexion"
+                _loginError.value = e.userMessage()
             }
             _isLoginLoading.value = false
         }
@@ -53,7 +54,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _joinError.value = null
             val result = authRepository.joinColocation(inviteCode)
             result.onFailure { e ->
-                _joinError.value = e.message ?: "Code d'invitation invalide"
+                _joinError.value = e.userMessage()
             }
             _isJoinLoading.value = false
         }
@@ -71,7 +72,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _loginError.value = null
             val result = authRepository.completeProfile(name, email, password, colorHex, phone)
             result.onFailure { e ->
-                _loginError.value = e.message ?: "Erreur lors de la finalisation du profil"
+                _loginError.value = e.userMessage()
             }
             _isLoginLoading.value = false
         }
@@ -89,7 +90,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             unregisterFcmDevice()
             val result = authRepository.deleteMe()
             result.onFailure { e ->
-                _loginError.value = e.message ?: "Erreur lors de la suppression du compte"
+                _loginError.value = e.userMessage()
             }
         }
     }

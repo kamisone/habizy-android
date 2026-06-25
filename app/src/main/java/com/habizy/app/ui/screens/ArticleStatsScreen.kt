@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import com.habizy.app.util.userMessage
 
 // -- Inline ViewModel --
 
@@ -102,7 +103,7 @@ class ArticleStatsViewModel(application: Application) : AndroidViewModel(applica
             receiptRepository.getArticleStats(colocationId)
                 .onSuccess { _stats.value = it }
                 .onFailure { e ->
-                    _errorMessage.value = e.message ?: "Erreur chargement articles"
+                    _errorMessage.value = e.userMessage()
                 }
 
             _isLoading.value = false

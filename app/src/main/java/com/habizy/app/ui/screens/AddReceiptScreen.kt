@@ -64,7 +64,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -97,6 +96,7 @@ import com.habizy.app.ui.theme.SubtitleText
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.UUID
+import com.habizy.app.util.userMessage
 
 private data class ReceiptLineItem(
     val id: UUID = UUID.randomUUID(),
@@ -212,7 +212,7 @@ fun AddReceiptScreen(
                 catalogArticles = articles
             }
         } catch (e: Exception) {
-            errorMessage = e.message ?: "Erreur lors de la verification"
+            errorMessage = e.userMessage()
             isMyTurn = true // fallback: allow
         }
         isCheckingTurn = false
@@ -644,7 +644,7 @@ fun AddReceiptScreen(
                                     onReceiptCreated()
                                     onBack()
                                 } catch (e: Exception) {
-                                    errorMessage = e.message ?: "Erreur lors de l'enregistrement"
+                                    errorMessage = e.userMessage()
                                 } finally {
                                     isSaving = false
                                 }
@@ -652,6 +652,7 @@ fun AddReceiptScreen(
                         },
                         enabled = canSave,
                         shape = RoundedCornerShape(18.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = GreenPrimary,
                             contentColor = Color.White,
@@ -660,8 +661,7 @@ fun AddReceiptScreen(
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
-                            .shadow(6.dp, RoundedCornerShape(18.dp)),
+                            .height(54.dp),
                     ) {
                         if (isSaving) {
                             CircularProgressIndicator(

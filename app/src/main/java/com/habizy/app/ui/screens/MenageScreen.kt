@@ -96,6 +96,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
+import com.habizy.app.util.userMessage
 
 // ── Inline ViewModel ──
 
@@ -143,7 +144,7 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
                 val week = api.getMenageWeek(colocationId)
                 _weekData.value = week
             } catch (e: Exception) {
-                if (!silent) _errorMessage.value = e.message ?: "Erreur chargement menage"
+                if (!silent) _errorMessage.value = e.userMessage()
             } finally {
                 if (!silent) {
                     if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
@@ -163,7 +164,7 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
                 api.markMenageDone(colocationId, MarkMenageDoneRequest(comment))
                 load()
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Erreur"
+                _errorMessage.value = e.userMessage()
             }
         }
     }
@@ -176,7 +177,7 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
                 api.undoMenageDone(colocationId)
                 load()
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Erreur"
+                _errorMessage.value = e.userMessage()
             }
         }
     }
@@ -189,7 +190,7 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
                 api.updateMenageTaskDescription(colocationId, UpdateTaskDescriptionRequest(description))
                 load()
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Erreur"
+                _errorMessage.value = e.userMessage()
             }
         }
     }
@@ -512,14 +513,14 @@ fun MenageScreen() {
                                     showCommentSheet = true
                                 },
                                 shape = RoundedCornerShape(18.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = GreenPrimary,
                                     contentColor = Color.White,
                                 ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(54.dp)
-                                    .shadow(6.dp, RoundedCornerShape(18.dp)),
+                                    .height(54.dp),
                             ) {
                                 Text(
                                     text = "J'ai fait le menage !",

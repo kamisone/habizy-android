@@ -127,13 +127,20 @@ private fun MainNavigation(
             BottomNavBar(
                 selectedIndex = selectedTab,
                 onTabSelected = { index ->
-                    selectedTab = index
-                    navController.navigate(tabRoutes[index]) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                    val targetRoute = tabRoutes[index]
+                    val currentRoute = navController.currentBackStackEntry?.destination?.route
+                    if (index == selectedTab && currentRoute != targetRoute) {
+                        // Deep in current tab — pop back to its root
+                        navController.popBackStack(targetRoute, inclusive = false)
+                    } else {
+                        selectedTab = index
+                        navController.navigate(targetRoute) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
             )

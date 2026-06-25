@@ -91,6 +91,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.habizy.app.util.userMessage
 
 // ---------------------------------------------------------------------------
 // ReportDetailViewModel (inline, scoped to this file)
@@ -148,7 +149,7 @@ class ReportDetailViewModel(application: Application) : AndroidViewModel(applica
 
             detailDeferred.await()
                 .onSuccess { _detail.value = it }
-                .onFailure { e -> _errorMessage.value = e.message ?: "Erreur chargement" }
+                .onFailure { e -> _errorMessage.value = e.userMessage() }
 
             // Load available tags for edit
             val colocationId = tokenManager.getColocationId()
@@ -170,7 +171,7 @@ class ReportDetailViewModel(application: Application) : AndroidViewModel(applica
                     _detail.value = current.copy(comments = current.comments + newComment)
                 }
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur ajout commentaire"
+                _errorMessage.value = e.userMessage()
             }
         }
     }
@@ -187,7 +188,7 @@ class ReportDetailViewModel(application: Application) : AndroidViewModel(applica
                 _detail.value = updated
                 _successMessage.value = "Signalement mis a jour"
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur mise a jour"
+                _errorMessage.value = e.userMessage()
             }
         }
     }
@@ -198,7 +199,7 @@ class ReportDetailViewModel(application: Application) : AndroidViewModel(applica
             result.onSuccess {
                 _deleted.value = true
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur suppression"
+                _errorMessage.value = e.userMessage()
             }
         }
     }

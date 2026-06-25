@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.habizy.app.util.userMessage
 
 // -- Inline ViewModel --
 
@@ -93,7 +94,7 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
 
             receiptRepository.getStats(colocationId)
                 .onSuccess { _stats.value = it }
-                .onFailure { e -> _errorMessage.value = e.message ?: "Erreur chargement stats" }
+                .onFailure { e -> _errorMessage.value = e.userMessage() }
 
             _isLoading.value = false
         }

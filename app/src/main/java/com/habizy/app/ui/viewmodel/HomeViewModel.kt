@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.habizy.app.util.userMessage
 
 data class HomeData(
     val userName: String,
@@ -76,7 +77,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val me = meResult.getOrNull()
             if (me == null) {
                 if (!isRefresh && !silent) {
-                    _state.value = HomeState.Error(meResult.exceptionOrNull()?.message ?: "Impossible de charger le profil")
+                    _state.value = HomeState.Error(meResult.exceptionOrNull()?.userMessage() ?: "Une erreur inattendue est survenue")
                 }
                 if (!silent) _isRefreshing.value = false
                 return@launch
@@ -145,7 +146,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 tokenManager.saveColocationId(colocation.id)
                 load()
             }.onFailure { e ->
-                _state.value = HomeState.Error(e.message ?: "Erreur lors de la creation")
+                _state.value = HomeState.Error(e.userMessage())
             }
         }
     }

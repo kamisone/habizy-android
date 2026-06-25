@@ -64,6 +64,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.habizy.app.util.userMessage
 
 // ── ViewModel ────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ class MembersViewModel(application: Application) : AndroidViewModel(application)
                     _members.value = detail.members
                 }
                 .onFailure { e ->
-                    _errorMessage.value = e.message ?: "Erreur chargement membres"
+                    _errorMessage.value = e.userMessage()
                 }
 
             _isLoading.value = false
@@ -140,7 +141,7 @@ class MembersViewModel(application: Application) : AndroidViewModel(application)
                 _members.value = _members.value.filter { it.user.id != userId }
                 _successMessage.value = "Membre retire"
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur retrait membre"
+                _errorMessage.value = e.userMessage()
             }
         }
     }

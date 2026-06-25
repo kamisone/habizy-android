@@ -371,6 +371,7 @@ fun CompleteProfileScreen() {
                 },
                 enabled = isFormValid && !isLoading,
                 shape = RoundedCornerShape(18.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = GreenPrimary,
                     contentColor = Color.White,
@@ -379,8 +380,7 @@ fun CompleteProfileScreen() {
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
-                    .shadow(6.dp, RoundedCornerShape(18.dp)),
+                    .height(54.dp),
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(

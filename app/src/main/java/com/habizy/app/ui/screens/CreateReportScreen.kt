@@ -76,6 +76,7 @@ import com.habizy.app.data.repository.StorageRepository
 import com.habizy.app.ui.theme.toComposeColor
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
+import com.habizy.app.util.userMessage
 
 @Composable
 fun CreateReportScreen(
@@ -177,7 +178,7 @@ fun CreateReportScreen(
                     onCreated()
                     onBack()
                 }.onFailure { e ->
-                    errorText = e.message ?: "Erreur creation"
+                    errorText = e.userMessage()
                 }
 
                 isLoading = false

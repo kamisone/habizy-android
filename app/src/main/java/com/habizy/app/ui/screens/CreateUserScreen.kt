@@ -80,6 +80,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.habizy.app.util.userMessage
 
 // ── ViewModel ────────────────────────────────────────────────────────
 
@@ -152,7 +153,7 @@ class CreateUserViewModel(application: Application) : AndroidViewModel(applicati
             result.onSuccess { response ->
                 _createdUser.value = response
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur creation compte"
+                _errorMessage.value = e.userMessage()
             }
 
             _isLoading.value = false

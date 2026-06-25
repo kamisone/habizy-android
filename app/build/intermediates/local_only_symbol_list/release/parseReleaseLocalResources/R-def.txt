@@ -8,6 +8,7 @@ drawable ic_launcher_foreground
 drawable ic_launcher_logo
 drawable logo_habizy
 mipmap ic_launcher
+mipmap ic_launcher_foreground
 mipmap ic_launcher_round
 string app_name
 string gcm_defaultSenderId
