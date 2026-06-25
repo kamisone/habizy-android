@@ -1,0 +1,49 @@
+# Built outputs
+/build
+app/build
+*.apk
+*.aab
+*.aar
+
+# Release artifacts
+/app/release
+
+# Gradle
+.gradle
+gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration
+local.properties
+
+# IntelliJ / Android Studio
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/navEditor.xml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Heap dumps
+*.hprof
+
+# Kotlin build caches
+.kotlin/
+
+# Keystore files (never commit these)
+*.jks
+*.keystore
+keystore.properties
+
+# Firebase (contains sensitive project config)
+# google-services.json
+
+# Crash/profiling
+*.trace

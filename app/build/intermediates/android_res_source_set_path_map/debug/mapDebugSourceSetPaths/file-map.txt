@@ -1,8 +1,0 @@
-com.habizy.app-pngs-0 /Users/mbenkhouya/projects/ai/cagnotte/android/app/build/generated/res/pngs/debug
-com.habizy.app-res-1 /Users/mbenkhouya/projects/ai/cagnotte/android/app/build/generated/res/processDebugGoogleServices
-com.habizy.app-updated_navigation_xml-2 /Users/mbenkhouya/projects/ai/cagnotte/android/app/build/generated/updated_navigation_xml/debug
-com.habizy.app-packageDebugResources-3 /Users/mbenkhouya/projects/ai/cagnotte/android/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
-com.habizy.app-packageDebugResources-4 /Users/mbenkhouya/projects/ai/cagnotte/android/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
-com.habizy.app-debug-5 /Users/mbenkhouya/projects/ai/cagnotte/android/app/build/intermediates/merged_res/debug/mergeDebugResources
-com.habizy.app-debug-6 /Users/mbenkhouya/projects/ai/cagnotte/android/app/src/debug/res
-com.habizy.app-main-7 /Users/mbenkhouya/projects/ai/cagnotte/android/app/src/main/res
