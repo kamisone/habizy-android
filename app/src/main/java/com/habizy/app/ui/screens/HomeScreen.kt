@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
@@ -36,6 +37,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -54,6 +56,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -67,6 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.habizy.app.data.model.ReceiptResponse
+import com.habizy.app.data.model.ReportResponse
 import com.habizy.app.data.model.ShoppingItemResponse
 import com.habizy.app.ui.components.AnimatedCounter
 import com.habizy.app.ui.components.RoommateAvatar
@@ -76,6 +80,7 @@ import com.habizy.app.ui.theme.BorderColor
 import com.habizy.app.ui.theme.CardBackground
 import com.habizy.app.ui.theme.CoralRed
 import com.habizy.app.ui.theme.DarkText
+import com.habizy.app.ui.theme.DividerColor
 import com.habizy.app.ui.theme.DmSansFamily
 import com.habizy.app.ui.theme.FredokaFamily
 import com.habizy.app.ui.theme.GreenDark
@@ -431,76 +436,27 @@ private fun LoadedContent(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // -- Current shopper card --
-        if (data.isMyTurn) {
-            MyTurnCard(onClick = onNavigateToRotation)
-        } else if (data.currentShopperName.isNotBlank()) {
-            CurrentShopperCard(
-                shopperName = data.currentShopperName,
-                shopperColorHex = data.currentShopperColor ?: "#888888",
-                shopperInitial = data.currentShopperInitial ?: data.currentShopperName.take(1).uppercase(),
-                onClick = onNavigateToRotation,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // -- Shopping preview card --
-        ShoppingPreviewCard(
-            items = data.shoppingPreview,
-            totalCount = data.shoppingItemCount,
-            onClick = onNavigateToShopping,
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // -- Last receipt card (shown after completing a turn) --
-        if (data.lastMyReceipt != null) {
-            LastReceiptCard(
-                receipt = data.lastMyReceipt,
-                onClick = onNavigateToHistory,
-            )
-            Spacer(modifier = Modifier.height(14.dp))
-        }
-
-        // -- Quick actions grid --
-        QuickActionsGrid(
-            onNavigateToStats = onNavigateToStats,
+        // -- Faire les courses section --
+        CoursesSection(
+            data = data,
+            onNavigateToRotation = onNavigateToRotation,
+            onNavigateToShopping = onNavigateToShopping,
             onNavigateToHistory = onNavigateToHistory,
-            onNavigateToMenage = onNavigateToMenage,
+            onNavigateToStats = onNavigateToStats,
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // -- Recent reports --
+        // -- Ménage section --
+        MenageSection(onClick = onNavigateToMenage)
+
+        // -- Signalements section --
         if (data.recentReports.isNotEmpty()) {
-            Text(
-                text = "Signalements récents",
-                fontFamily = FredokaFamily,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp,
-                color = DarkText,
+            Spacer(modifier = Modifier.height(14.dp))
+            SignalementsSection(
+                reports = data.recentReports,
+                onNavigateToReportDetail = onNavigateToReportDetail,
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                data.recentReports.forEach { report ->
-                    ReportMiniCard(
-                        title = report.title,
-                        authorName = report.user.name,
-                        authorColorHex = report.user.colorHex ?: "#888888",
-                        authorInitial = report.user.initial ?: report.user.name.take(1).uppercase(),
-                        commentCount = report.commentCount ?: 0,
-                        timeAgo = report.createdAt?.let { formatTimeAgo(it) } ?: "",
-                        firstPhotoUrl = report.photoUrls?.firstOrNull(),
-                        onClick = { onNavigateToReportDetail(report.id) },
-                    )
-                }
-            }
         }
     }
 }
@@ -586,218 +542,212 @@ private fun StatMiniCard(
     }
 }
 
-// -- My turn card (orange gradient) --
+// -- Faire les courses section card --
 
 @Composable
-private fun MyTurnCard(onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(22.dp))
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(Orange, Color(0xFFFF9800)),
-                ),
-            )
-            .clickable { onClick() }
-            .padding(20.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "C'est ton tour !",
-                    fontFamily = FredokaFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = Color.White,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Tu es le prochain a faire les courses",
-                    fontFamily = DmSansFamily,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.85f),
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ShoppingCart,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.size(32.dp),
-            )
-        }
-    }
-}
-
-// -- Current shopper card (blue gradient) --
-
-@Composable
-private fun CurrentShopperCard(
-    shopperName: String,
-    shopperColorHex: String,
-    shopperInitial: String,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(22.dp))
-            .clip(RoundedCornerShape(22.dp))
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(Blue, Color(0xFF2563EB)),
-                ),
-            )
-            .clickable { onClick() }
-            .padding(20.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            RoommateAvatar(
-                colorHex = shopperColorHex,
-                initial = shopperInitial,
-                size = 44.dp,
-                cornerRadius = 15.dp,
-                fontSize = 17.sp,
-            )
-            Spacer(modifier = Modifier.width(14.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Tour actuel",
-                    fontFamily = DmSansFamily,
-                    fontSize = 13.sp,
-                    color = Color.White.copy(alpha = 0.8f),
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = shopperName,
-                    fontFamily = FredokaFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp,
-                    color = Color.White,
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.size(24.dp),
-            )
-        }
-    }
-}
-
-// -- Shopping preview card --
-
-@Composable
-private fun ShoppingPreviewCard(
-    items: List<ShoppingItemResponse>,
-    totalCount: Int,
-    onClick: () -> Unit,
+private fun CoursesSection(
+    data: HomeData,
+    onNavigateToRotation: () -> Unit,
+    onNavigateToShopping: () -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onNavigateToStats: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp, RoundedCornerShape(22.dp))
             .clip(RoundedCornerShape(22.dp))
-            .background(CardBackground)
-            .clickable { onClick() }
-            .padding(16.dp),
+            .background(CardBackground),
     ) {
+        // Section header
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(GreenPrimary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.ShoppingCart, null, tint = GreenPrimary, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.width(10.dp))
             Text(
-                text = "Articles manquants",
+                text = "Faire les courses",
                 fontFamily = FredokaFamily,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp,
+                fontSize = 17.sp,
                 color = DarkText,
-            )
-            Text(
-                text = "$totalCount à acheter",
-                fontFamily = DmSansFamily,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 12.sp,
-                color = GreenPrimary,
             )
         }
 
-        if (items.isEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Aucun article manquant",
-                fontFamily = DmSansFamily,
-                fontSize = 13.sp,
-                color = SubtitleText,
-            )
-        } else {
-            Spacer(modifier = Modifier.height(12.dp))
-            items.forEach { item ->
-                Row(
+        Spacer(Modifier.height(14.dp))
+
+        // Turn indicator
+        if (data.isMyTurn) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Brush.linearGradient(listOf(Orange, Color(0xFFFF9800))))
+                    .clickable { onNavigateToRotation() }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(Color.White.copy(alpha = 0.25f)),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(GreenPrimary),
-                    )
-                    Spacer(modifier = Modifier.width(11.dp))
-                    Text(
-                        text = item.name,
-                        fontFamily = DmSansFamily,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp,
-                        color = DarkText,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = "x${item.quantity}",
-                        fontFamily = DmSansFamily,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp,
-                        color = SubtitleText,
-                    )
+                    Icon(Icons.Default.ShoppingCart, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("C'est ton tour !", fontFamily = FredokaFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
+                    Text("Tu es le prochain a faire les courses", fontFamily = DmSansFamily, fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(22.dp))
+            }
+        } else if (data.currentShopperName.isNotBlank()) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Brush.linearGradient(listOf(Blue, Color(0xFF2563EB))))
+                    .clickable { onNavigateToRotation() }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RoommateAvatar(
+                    colorHex = data.currentShopperColor ?: "#888888",
+                    initial = data.currentShopperInitial ?: data.currentShopperName.take(1).uppercase(),
+                    size = 40.dp,
+                    cornerRadius = 13.dp,
+                    fontSize = 16.sp,
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Aux courses", fontFamily = DmSansFamily, fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                    Text(data.currentShopperName, fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = Color.White)
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(22.dp))
+            }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp), color = DividerColor)
+
+        // Shopping preview
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onNavigateToShopping() }
+                .padding(horizontal = 16.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Articles manquants", fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = DarkText)
+                Text("${data.shoppingItemCount} à acheter", fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = GreenPrimary)
+            }
+            if (data.shoppingPreview.isEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Text("Aucun article manquant", fontFamily = DmSansFamily, fontSize = 13.sp, color = SubtitleText)
+            } else {
+                Spacer(Modifier.height(10.dp))
+                data.shoppingPreview.forEach { item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(GreenPrimary))
+                        Spacer(Modifier.width(10.dp))
+                        Text(item.name, fontFamily = DmSansFamily, fontWeight = FontWeight.Medium, fontSize = 14.sp, color = DarkText, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        Text("x${item.quantity}", fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = SubtitleText)
+                    }
+                }
+                val remaining = data.shoppingItemCount - data.shoppingPreview.size
+                if (remaining > 0) {
+                    Spacer(Modifier.height(10.dp))
+                    Text("Voir les $remaining autres articles", fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = GreenPrimary)
                 }
             }
+        }
 
-            val remaining = totalCount - items.size
-            if (remaining > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Voir les $remaining autres articles",
-                    fontFamily = DmSansFamily,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp,
-                    color = GreenPrimary,
-                )
+        // Last receipt (if just completed a turn)
+        if (data.lastMyReceipt != null) {
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp), color = DividerColor)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToHistory() }
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(GreenPrimary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Default.CheckCircle, null, tint = GreenPrimary, modifier = Modifier.size(22.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Ticket enregistré", fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = DarkText)
+                    Text("${data.lastMyReceipt.store} · ${formatEuro(data.lastMyReceipt.totalAmount)}", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(18.dp))
             }
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp), color = DividerColor)
+
+        // Statistiques + Historique buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SectionActionButton(icon = Icons.Default.BarChart, label = "Statistiques", color = Purple, onClick = onNavigateToStats, modifier = Modifier.weight(1f))
+            SectionActionButton(icon = Icons.Default.History, label = "Historique", color = Blue, onClick = onNavigateToHistory, modifier = Modifier.weight(1f))
         }
     }
 }
 
-// -- Last receipt card --
+@Composable
+private fun SectionActionButton(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(color.copy(alpha = 0.08f))
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(label, fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = color)
+    }
+}
+
+// -- Ménage section card --
 
 @Composable
-private fun LastReceiptCard(
-    receipt: ReceiptResponse,
-    onClick: () -> Unit,
-) {
+private fun MenageSection(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -812,224 +762,96 @@ private fun LastReceiptCard(
             modifier = Modifier
                 .size(44.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(GreenPrimary.copy(alpha = 0.12f)),
+                .background(Orange.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = null,
-                tint = GreenPrimary,
-                modifier = Modifier.size(24.dp),
-            )
+            Icon(Icons.Default.CleaningServices, null, tint = Orange, modifier = Modifier.size(24.dp))
         }
-        Spacer(modifier = Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Ton ticket a été enregistré",
-                fontFamily = DmSansFamily,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
-                color = DarkText,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "${receipt.store} · ${formatEuro(receipt.totalAmount)}",
-                fontFamily = DmSansFamily,
-                fontSize = 13.sp,
-                color = SubtitleText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Ménage", fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = DarkText)
+            Text("Planifier et suivre le ménage", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
         }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = SubtitleText,
-            modifier = Modifier.size(20.dp),
-        )
+        Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(20.dp))
     }
 }
 
-// -- Quick actions grid --
+// -- Signalements section card --
 
 @Composable
-private fun QuickActionsGrid(
-    onNavigateToStats: () -> Unit,
-    onNavigateToHistory: () -> Unit,
-    onNavigateToMenage: () -> Unit,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            QuickActionCard(
-                icon = Icons.Default.BarChart,
-                label = "Statistiques",
-                color = Purple,
-                onClick = onNavigateToStats,
-                modifier = Modifier.weight(1f),
-            )
-            QuickActionCard(
-                icon = Icons.Default.History,
-                label = "Historique",
-                color = Blue,
-                onClick = onNavigateToHistory,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            QuickActionCard(
-                icon = Icons.Default.CleaningServices,
-                label = "Ménage",
-                color = Orange,
-                onClick = onNavigateToMenage,
-                modifier = Modifier.weight(1f),
-            )
-            // Empty spacer to maintain 2-column grid
-            Spacer(modifier = Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun QuickActionCard(
-    icon: ImageVector,
-    label: String,
-    color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .background(CardBackground)
-            .clickable { onClick() }
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(color.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = color,
-                modifier = Modifier.size(22.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = label,
-            fontFamily = DmSansFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 13.sp,
-            color = DarkText,
-        )
-    }
-}
-
-// -- Report mini card --
-
-@Composable
-private fun ReportMiniCard(
-    title: String,
-    authorName: String,
-    authorColorHex: String,
-    authorInitial: String,
-    commentCount: Int,
-    timeAgo: String,
-    firstPhotoUrl: String?,
-    onClick: () -> Unit,
+private fun SignalementsSection(
+    reports: List<ReportResponse>,
+    onNavigateToReportDetail: (String) -> Unit,
 ) {
     Column(
         modifier = Modifier
-            .width(200.dp)
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .background(CardBackground)
-            .clickable { onClick() }
-            .padding(16.dp),
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(CardBackground),
     ) {
-        if (firstPhotoUrl != null) {
-            AsyncImage(
-                model = firstPhotoUrl,
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(CoralRed.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.Flag, null, tint = CoralRed, modifier = Modifier.size(17.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Text("Signalements récents", fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = DarkText)
+        }
+
+        Spacer(Modifier.height(4.dp))
+
+        reports.forEachIndexed { index, report ->
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(80.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(BorderColor.copy(alpha = 0.5f)),
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
-        Text(
-            text = title,
-            fontFamily = FredokaFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            color = DarkText,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            RoommateAvatar(
-                colorHex = authorColorHex,
-                initial = authorInitial,
-                size = 22.dp,
-                cornerRadius = 7.dp,
-                fontSize = 10.sp,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = authorName,
-                fontFamily = DmSansFamily,
-                fontSize = 12.sp,
-                color = SubtitleText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (commentCount > 0) {
-                Text(
-                    text = "$commentCount commentaire${if (commentCount > 1) "s" else ""}",
-                    fontFamily = DmSansFamily,
-                    fontSize = 11.sp,
-                    color = SubtitleText,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                    .clickable { onNavigateToReportDetail(report.id) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val firstPhoto = report.photoUrls?.firstOrNull()
+                if (firstPhoto != null) {
+                    AsyncImage(
+                        model = firstPhoto,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(46.dp).clip(RoundedCornerShape(13.dp)),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.size(46.dp).clip(RoundedCornerShape(13.dp)).background(CoralRed.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Default.Flag, null, tint = CoralRed, modifier = Modifier.size(22.dp))
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(report.title, fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = DarkText, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "${report.user.name} · ${report.createdAt?.let { formatTimeAgo(it) } ?: ""}",
+                        fontFamily = DmSansFamily,
+                        fontSize = 12.sp,
+                        color = SubtitleText,
+                    )
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(18.dp))
             }
-            Text(
-                text = timeAgo,
-                fontFamily = DmSansFamily,
-                fontSize = 11.sp,
-                color = SubtitleText,
-            )
+            if (index < reports.lastIndex) {
+                HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 16.dp))
+            }
         }
+
+        Spacer(Modifier.height(8.dp))
     }
 }
 
