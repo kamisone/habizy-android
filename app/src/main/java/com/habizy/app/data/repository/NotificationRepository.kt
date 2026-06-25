@@ -2,8 +2,17 @@ package com.habizy.app.data.repository
 
 import com.habizy.app.data.model.*
 import com.habizy.app.data.remote.ApiService
+import com.habizy.app.data.remote.RegisterDeviceRequest
 
 class NotificationRepository(private val api: ApiService) {
+
+    suspend fun registerDevice(platform: String, token: String): Result<Unit> = runCatching {
+        api.registerDevice(RegisterDeviceRequest(platform = platform, token = token))
+    }
+
+    suspend fun unregisterDevice(token: String): Result<Unit> = runCatching {
+        api.unregisterDevice(token)
+    }
 
     suspend fun getAll(): Result<List<NotificationResponse>> = runCatching {
         api.getNotifications()

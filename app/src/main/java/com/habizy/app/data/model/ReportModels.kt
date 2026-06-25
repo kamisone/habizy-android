@@ -57,7 +57,7 @@ data class ReportDetailResponse(
     val photoUrls: List<String>? = null,
     val user: UserResponse,
     val colocationId: String,
-    val comments: List<ReportCommentResponse>,
+    val comments: List<ReportCommentResponse> = emptyList(),
     val createdAt: String? = null,
     val updatedAt: String? = null
 )

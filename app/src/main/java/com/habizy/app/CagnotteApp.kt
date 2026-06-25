@@ -6,6 +6,9 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.habizy.app.data.local.TokenManager
 import com.habizy.app.data.remote.ApiClient
 import com.habizy.app.notification.NotificationChannelHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Application class -- entry point that initializes global singletons,
@@ -26,12 +29,15 @@ class CagnotteApp : Application() {
         // Create the notification channel (Android 8+ requirement)
         NotificationChannelHelper.createChannel(this)
 
-        // Retrieve the current FCM token (useful for first install)
+        // Retrieve and persist the current FCM token so AuthViewModel can
+        // register it with the server after login.
+        val tokenManager = TokenManager(this)
         FirebaseMessaging.getInstance().token
             .addOnSuccessListener { token ->
                 Log.d(TAG, "FCM token: $token")
-                // Token will be registered with the server when the user logs in
-                // and CagnotteMessagingService.onNewToken handles refreshes.
+                CoroutineScope(Dispatchers.IO).launch {
+                    tokenManager.saveFcmToken(token)
+                }
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "Failed to retrieve FCM token", e)

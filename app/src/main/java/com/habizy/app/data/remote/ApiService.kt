@@ -156,10 +156,10 @@ interface ApiService {
 
     // -- Device --
 
-    @POST("devices/register")
+    @POST("notifications/devices")
     suspend fun registerDevice(@Body body: RegisterDeviceRequest)
 
-    @DELETE("devices/{token}")
+    @DELETE("notifications/devices/{token}")
     suspend fun unregisterDevice(@Path("token") token: String)
 
     // -- Notifications --

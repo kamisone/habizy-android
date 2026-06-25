@@ -9,6 +9,12 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.habizy.app.MainActivity
 import com.habizy.app.R
+import com.habizy.app.data.local.TokenManager
+import com.habizy.app.data.remote.ApiClient
+import com.habizy.app.data.repository.NotificationRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 /**
  * Firebase Cloud Messaging service.
@@ -30,14 +36,13 @@ class CagnotteMessagingService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d(TAG, "New FCM token: $token")
 
-        // Persist locally
-        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
-            .edit()
-            .putString(KEY_FCM_TOKEN, token)
-            .apply()
-
-        // TODO: Register token with the backend via ApiClient:
-        // e.g. ApiClient.registerDevice(platform = "android", token = token)
+        CoroutineScope(Dispatchers.IO).launch {
+            // Persist to DataStore so AuthViewModel.registerFcmDevice() can read it after login
+            TokenManager(this@CagnotteMessagingService).saveFcmToken(token)
+            // Register immediately if already logged in
+            NotificationRepository(ApiClient.apiService)
+                .registerDevice(platform = "android", token = token)
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
