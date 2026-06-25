@@ -100,7 +100,7 @@ fun formatTimeAgo(dateString: String?): String {
         val days = duration.toDays()
 
         when {
-            minutes < 1 -> "a l'instant"
+            minutes < 1 -> "à l'instant"
             minutes < 60 -> "il y a ${minutes}min"
             hours < 24 -> "il y a ${hours}h"
             days < 7 -> "il y a ${days}j"

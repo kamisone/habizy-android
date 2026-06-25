@@ -249,7 +249,7 @@ fun ProfileScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Mes depenses",
+                                text = "Mes dépenses",
                                 fontFamily = DmSansFamily,
                                 fontWeight = FontWeight.Normal,
                                 fontSize = 12.sp,
@@ -425,7 +425,7 @@ fun ProfileScreen(
                             )
                             SettingsRow(
                                 icon = Icons.Default.Settings,
-                                label = "Parametres admin",
+                                label = "Paramètres admin",
                                 onClick = { onNavigateToAdmin() },
                             )
                         }

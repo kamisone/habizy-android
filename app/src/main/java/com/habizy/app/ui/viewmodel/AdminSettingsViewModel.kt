@@ -60,7 +60,7 @@ class AdminSettingsViewModel(application: Application) : AndroidViewModel(applic
                 _spendingGapThreshold.value = detail.colocation.spendingGapThreshold?.toString() ?: ""
                 _notificationsEnabled.value = detail.colocation.notificationsEnabled != false
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur chargement parametres"
+                _errorMessage.value = e.message ?: "Erreur chargement paramètres"
             }
 
             _isLoading.value = false
@@ -99,10 +99,10 @@ class AdminSettingsViewModel(application: Application) : AndroidViewModel(applic
             )
 
             result.onSuccess {
-                _successMessage.value = "Parametres sauvegardes"
+                _successMessage.value = "Paramètres sauvegardés"
                 load()
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur sauvegarde parametres"
+                _errorMessage.value = e.message ?: "Erreur sauvegarde paramètres"
             }
 
             _isSaving.value = false
@@ -123,7 +123,7 @@ class AdminSettingsViewModel(application: Application) : AndroidViewModel(applic
 
             val result = rotationRepository.generate(colocationId)
             result.onSuccess {
-                _successMessage.value = "Rotation generee"
+                _successMessage.value = "Rotation générée"
             }.onFailure { e ->
                 _errorMessage.value = e.message ?: "Erreur generation rotation"
             }

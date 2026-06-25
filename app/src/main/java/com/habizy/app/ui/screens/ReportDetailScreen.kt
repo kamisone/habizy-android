@@ -186,7 +186,7 @@ class ReportDetailViewModel(application: Application) : AndroidViewModel(applica
             val result = reportRepository.update(reportId, body)
             result.onSuccess { updated ->
                 _detail.value = updated
-                _successMessage.value = "Signalement mis a jour"
+                _successMessage.value = "Signalement mis à jour"
             }.onFailure { e ->
                 _errorMessage.value = e.userMessage()
             }

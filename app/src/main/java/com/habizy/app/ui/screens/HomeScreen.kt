@@ -64,6 +64,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.habizy.app.ui.components.AnimatedCounter
 import com.habizy.app.ui.components.RoommateAvatar
 import com.habizy.app.ui.components.ShimmerHomeLoading
@@ -186,7 +187,7 @@ private fun ErrorView(
             ),
         ) {
             Text(
-                text = "Reessayer",
+                text = "Réessayer",
                 fontFamily = FredokaFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 15.sp,
@@ -242,7 +243,7 @@ private fun SetupColocationView(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Cree ta colocation pour commencer",
+            text = "Crée ta colocation pour commencer",
             fontFamily = DmSansFamily,
             fontSize = 15.sp,
             color = SubtitleText,
@@ -311,7 +312,7 @@ private fun SetupColocationView(
                     .height(54.dp),
             ) {
                 Text(
-                    text = "Creer",
+                    text = "Créer",
                     fontFamily = FredokaFamily,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
@@ -418,7 +419,7 @@ private fun LoadedContent(
             )
             // Mes depenses
             StatMiniCard(
-                title = "Mes depenses",
+                title = "Mes dépenses",
                 value = "-${formatEuro(data.mySpent)}",
                 valueColor = CoralRed,
                 modifier = Modifier.weight(1f),
@@ -463,7 +464,7 @@ private fun LoadedContent(
         // -- Recent reports --
         if (data.recentReports.isNotEmpty()) {
             Text(
-                text = "Signalements recents",
+                text = "Signalements récents",
                 fontFamily = FredokaFamily,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 18.sp,
@@ -484,7 +485,7 @@ private fun LoadedContent(
                         authorInitial = report.user.initial ?: report.user.name.take(1).uppercase(),
                         commentCount = report.commentCount ?: 0,
                         timeAgo = report.createdAt?.let { formatTimeAgo(it) } ?: "",
-                        hasPhoto = !report.photoUrls.isNullOrEmpty(),
+                        firstPhotoUrl = report.photoUrls?.firstOrNull(),
                         onClick = { onNavigateToReportDetail(report.id) },
                     )
                 }
@@ -514,7 +515,7 @@ private fun SpendingCard(
     ) {
         Column {
             Text(
-                text = "Depenses de la coloc",
+                text = "Dépenses de la coloc",
                 fontFamily = DmSansFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp,
@@ -796,7 +797,7 @@ private fun QuickActionsGrid(
         ) {
             QuickActionCard(
                 icon = Icons.Default.CleaningServices,
-                label = "Menage",
+                label = "Ménage",
                 color = Orange,
                 onClick = onNavigateToMenage,
                 modifier = Modifier.weight(1f),
@@ -859,7 +860,7 @@ private fun ReportMiniCard(
     authorInitial: String,
     commentCount: Int,
     timeAgo: String,
-    hasPhoto: Boolean,
+    firstPhotoUrl: String?,
     onClick: () -> Unit,
 ) {
     Column(
@@ -871,22 +872,17 @@ private fun ReportMiniCard(
             .clickable { onClick() }
             .padding(16.dp),
     ) {
-        if (hasPhoto) {
-            Box(
+        if (firstPhotoUrl != null) {
+            AsyncImage(
+                model = firstPhotoUrl,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(BorderColor.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.BarChart,
-                    contentDescription = null,
-                    tint = SubtitleText,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+            )
             Spacer(modifier = Modifier.height(10.dp))
         }
 
@@ -967,7 +963,7 @@ private fun formatTimeAgo(isoDate: String): String {
         val diffDays = diffHours / 24
 
         when {
-            diffMin < 1 -> "a l'instant"
+            diffMin < 1 -> "à l'instant"
             diffMin < 60 -> "il y a ${diffMin}min"
             diffHours < 24 -> "il y a ${diffHours}h"
             diffDays < 7 -> "il y a ${diffDays}j"

@@ -473,7 +473,7 @@ private fun EmptyRotationContent(
 
         if (isAdmin) {
             Text(
-                text = "Generez un ordre de passage pour vos colocataires",
+                text = "Générez un ordre de passage pour vos colocataires",
                 fontFamily = DmSansFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,
@@ -506,7 +506,7 @@ private fun EmptyRotationContent(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "Generer l'ordre",
+                    text = "Générer l'ordre",
                     fontFamily = DmSansFamily,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
@@ -514,7 +514,7 @@ private fun EmptyRotationContent(
             }
         } else {
             Text(
-                text = "L'administrateur n'a pas encore genere l'ordre de passage",
+                text = "L'administrateur n'a pas encore généré l'ordre de passage",
                 fontFamily = DmSansFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 14.sp,

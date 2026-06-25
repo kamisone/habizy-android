@@ -153,7 +153,7 @@ fun CreateReportScreen(
                     storageRepository.uploadImage(stream.toByteArray(), "reports")
                         .onSuccess { uploadedUrls.add(it) }
                         .onFailure {
-                            errorText = "Echec upload photo"
+                            errorText = "Échec upload photo"
                             isLoading = false
                             return@launch
                         }
@@ -171,7 +171,7 @@ fun CreateReportScreen(
                 result.onSuccess {
                     scope.launch {
                         snackbarHost.showTyped(
-                            "Signalement cree",
+                            "Signalement créé",
                             SnackbarType.SUCCESS,
                         )
                     }

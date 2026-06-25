@@ -331,7 +331,7 @@ fun MenageScreen() {
                         // Left side
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Menage",
+                                text = "Ménage",
                                 fontFamily = FredokaFamily,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 26.sp,
@@ -347,7 +347,7 @@ fun MenageScreen() {
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "$totalDone/$totalMembers ont fait le menage",
+                                    text = "$totalDone/$totalMembers ont fait le ménage",
                                     fontFamily = DmSansFamily,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 13.sp,
@@ -372,7 +372,7 @@ fun MenageScreen() {
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Icon(
                                                 imageVector = Icons.Default.Edit,
-                                                contentDescription = "Modifier la tache",
+                                                contentDescription = "Modifier la tâche",
                                                 tint = Color.White.copy(alpha = 0.7f),
                                                 modifier = Modifier
                                                     .size(16.dp)
@@ -394,7 +394,7 @@ fun MenageScreen() {
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = "Ajouter une tache",
+                                            contentDescription = "Ajouter une tâche",
                                             tint = Color.White.copy(alpha = 0.6f),
                                             modifier = Modifier.size(14.dp),
                                         )
@@ -479,7 +479,7 @@ fun MenageScreen() {
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "${todayMember.name} a fait le menage aujourd'hui",
+                                text = "${todayMember.name} a fait le ménage aujourd'hui",
                                 fontFamily = DmSansFamily,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 14.sp,
@@ -523,7 +523,7 @@ fun MenageScreen() {
                                     .height(54.dp),
                             ) {
                                 Text(
-                                    text = "J'ai fait le menage !",
+                                    text = "J'ai fait le ménage !",
                                     fontFamily = FredokaFamily,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp,
@@ -544,7 +544,7 @@ fun MenageScreen() {
                                     .height(54.dp),
                             ) {
                                 Text(
-                                    text = "Annuler mon menage",
+                                    text = "Annuler mon ménage",
                                     fontFamily = FredokaFamily,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 16.sp,
@@ -566,7 +566,7 @@ fun MenageScreen() {
                                     .height(54.dp),
                             ) {
                                 Text(
-                                    text = "Menage deja fait cette semaine",
+                                    text = "Ménage déjà fait cette semaine",
                                     fontFamily = FredokaFamily,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 15.sp,
@@ -588,7 +588,7 @@ fun MenageScreen() {
                                     .height(54.dp),
                             ) {
                                 Text(
-                                    text = "Deja pris aujourd'hui",
+                                    text = "Déjà pris aujourd'hui",
                                     fontFamily = FredokaFamily,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 15.sp,
@@ -779,7 +779,7 @@ fun MenageScreen() {
                     onValueChange = { if (it.length <= 50) commentText = it },
                     placeholder = {
                         Text(
-                            text = "Ex: Passe l'aspirateur et la serpillere",
+                            text = "Ex: Passe l'aspirateur et la serpillière",
                             fontFamily = DmSansFamily,
                             color = SubtitleText,
                         )
@@ -852,7 +852,7 @@ fun MenageScreen() {
                     .padding(bottom = 32.dp),
             ) {
                 Text(
-                    text = "Description de la tache",
+                    text = "Description de la tâche",
                     fontFamily = FredokaFamily,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 18.sp,
@@ -864,7 +864,7 @@ fun MenageScreen() {
                     onValueChange = { editTaskText = it },
                     placeholder = {
                         Text(
-                            text = "Decrivez la tache de menage...",
+                            text = "Decrivez la tâche de ménage...",
                             fontFamily = DmSansFamily,
                             color = SubtitleText,
                         )

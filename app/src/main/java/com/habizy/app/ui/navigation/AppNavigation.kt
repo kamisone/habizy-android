@@ -130,9 +130,12 @@ private fun MainNavigation(
                     val targetRoute = tabRoutes[index]
                     val currentRoute = navController.currentBackStackEntry?.destination?.route
                     if (index == selectedTab && currentRoute != targetRoute) {
-                        // Deep in current tab — pop back to its root
-                        navController.popBackStack(targetRoute, inclusive = false)
-                    } else {
+                        // Re-tapped current tab while deeper — pop to its root
+                        navController.navigate(targetRoute) {
+                            popUpTo(targetRoute) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    } else if (index != selectedTab) {
                         selectedTab = index
                         navController.navigate(targetRoute) {
                             popUpTo(navController.graph.startDestinationId) {

@@ -142,7 +142,7 @@ class RotationViewModel(application: Application) : AndroidViewModel(application
             result.onSuccess {
                 load()
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur mise a jour membre"
+                _errorMessage.value = e.message ?: "Erreur mise à jour membre"
             }
         }
     }

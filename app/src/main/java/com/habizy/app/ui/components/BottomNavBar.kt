@@ -59,8 +59,8 @@ data class BottomNavItem(
 val bottomNavItems = listOf(
     BottomNavItem("Accueil", Icons.Filled.Home, Icons.Outlined.Home),
     BottomNavItem("Signaler", Icons.Filled.Flag, Icons.Outlined.Flag),
-    BottomNavItem("Menage", Icons.Filled.CleaningServices, Icons.Outlined.CleaningServices),
-    BottomNavItem("Depenses", Icons.Filled.BarChart, Icons.Outlined.BarChart),
+    BottomNavItem("Ménage", Icons.Filled.CleaningServices, Icons.Outlined.CleaningServices),
+    BottomNavItem("Dépenses", Icons.Filled.BarChart, Icons.Outlined.BarChart),
     BottomNavItem("Profil", Icons.Filled.Person, Icons.Outlined.Person),
 )
 

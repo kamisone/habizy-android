@@ -118,7 +118,7 @@ fun CompleteProfileScreen() {
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Complete ton profil",
+            text = "Complète ton profil",
             fontFamily = FredokaFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 24.sp,
@@ -145,7 +145,7 @@ fun CompleteProfileScreen() {
         ) {
             // Name field
             Text(
-                text = "Prenom",
+                text = "Prénom",
                 fontFamily = DmSansFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp,
@@ -160,7 +160,7 @@ fun CompleteProfileScreen() {
                 },
                 placeholder = {
                     Text(
-                        text = "Ton prenom",
+                        text = "Ton prénom",
                         fontFamily = DmSansFamily,
                         color = SubtitleText,
                     )

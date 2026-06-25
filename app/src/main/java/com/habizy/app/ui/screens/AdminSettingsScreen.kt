@@ -110,7 +110,7 @@ fun AdminSettingsScreen(
             .fillMaxSize()
             .background(ScreenBackground),
     ) {
-        TopBarWithBack(title = "Parametres Admin", onBack = onBack)
+        TopBarWithBack(title = "Paramètres Admin", onBack = onBack)
 
         if (isLoading && colocation == null) {
             Box(
@@ -213,7 +213,7 @@ fun AdminSettingsScreen(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Parametres",
+                            text = "Paramètres",
                             fontFamily = FredokaFamily,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 18.sp,
@@ -245,7 +245,7 @@ fun AdminSettingsScreen(
                         Spacer(Modifier.height(16.dp))
 
                         Text(
-                            text = "Seuil d'alerte ecart de depenses (€)",
+                            text = "Seuil d'alerte écart de dépenses (€)",
                             fontFamily = DmSansFamily,
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp,
@@ -322,7 +322,7 @@ fun AdminSettingsScreen(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        text = "Generer la rotation",
+                        text = "Générer la rotation",
                         fontFamily = DmSansFamily,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,

@@ -137,7 +137,7 @@ class ShoppingViewModel(application: Application) : AndroidViewModel(application
                     if (item.id == itemId) updated else item
                 }
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur mise a jour article"
+                _errorMessage.value = e.message ?: "Erreur mise à jour article"
             }
         }
     }

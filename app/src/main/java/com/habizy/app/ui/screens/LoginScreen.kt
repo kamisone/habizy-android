@@ -293,7 +293,7 @@ fun LoginScreen() {
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = "Entre le code d'invitation que tu as recu",
+            text = "Entre le code d'invitation que tu as reçu",
             fontFamily = DmSansFamily,
             fontSize = 14.sp,
             color = SubtitleText,

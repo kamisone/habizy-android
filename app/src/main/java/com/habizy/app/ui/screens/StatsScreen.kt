@@ -156,7 +156,7 @@ fun StatsScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Total des depenses",
+                            text = "Total des dépenses",
                             fontFamily = DmSansFamily,
                             fontWeight = FontWeight.Normal,
                             fontSize = 13.sp,
@@ -196,7 +196,7 @@ fun StatsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Depenses par colocataire",
+                                text = "Dépenses par colocataire",
                                 fontFamily = FredokaFamily,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 16.sp,
@@ -287,7 +287,7 @@ fun StatsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Equilibre des depenses",
+                                text = "Équilibre des dépenses",
                                 fontFamily = FredokaFamily,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 16.sp,
@@ -359,7 +359,7 @@ fun StatsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Depenses par categorie",
+                                text = "Dépenses par catégorie",
                                 fontFamily = FredokaFamily,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 16.sp,

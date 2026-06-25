@@ -150,7 +150,7 @@ fun ExpensesScreen(
             ) {
                 // Header
                 Text(
-                    text = "Depenses",
+                    text = "Dépenses",
                     fontFamily = FredokaFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
@@ -207,7 +207,7 @@ fun ExpensesScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = "Total depense",
+                                    text = "Total dépensé",
                                     fontFamily = DmSansFamily,
                                     fontWeight = FontWeight.Normal,
                                     fontSize = 13.sp,

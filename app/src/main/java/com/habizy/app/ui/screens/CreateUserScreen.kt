@@ -276,7 +276,7 @@ fun CreateUserScreen(
                         onValueChange = { viewModel.setPassword(it) },
                         label = {
                             Text(
-                                text = "Mot de passe (optionnel -- genere auto)",
+                                text = "Mot de passe (optionnel -- généré auto)",
                                 fontFamily = DmSansFamily,
                             )
                         },
@@ -378,7 +378,7 @@ fun CreateUserScreen(
                             Spacer(Modifier.width(8.dp))
                         }
                         Text(
-                            text = "Creer le compte",
+                            text = "Créer le compte",
                             fontFamily = DmSansFamily,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 15.sp,
@@ -439,7 +439,7 @@ fun CreateUserScreen(
                     Spacer(Modifier.height(20.dp))
 
                     Text(
-                        text = "Mot de passe genere",
+                        text = "Mot de passe généré",
                         fontFamily = DmSansFamily,
                         fontWeight = FontWeight.Medium,
                         fontSize = 13.sp,

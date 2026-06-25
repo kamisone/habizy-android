@@ -137,9 +137,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             val result = authRepository.updateName(name)
             result.onSuccess { updatedUser ->
                 _user.value = updatedUser
-                _successMessage.value = "Nom mis a jour"
+                _successMessage.value = "Nom mis à jour"
             }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur lors de la mise a jour du nom"
+                _errorMessage.value = e.message ?: "Erreur lors de la mise à jour du nom"
             }
             _isLoading.value = false
         }

@@ -66,7 +66,7 @@ private fun mapStatusCode(code: Int): String = when (code) {
  * Formats an ISO-8601 date string into a relative "time ago" label in French,
  * matching the iOS [formatTimeAgo] helper.
  *
- * Examples: "a l'instant", "il y a 5min", "il y a 3h", "il y a 2j", "14/03/2025"
+ * Examples: "à l'instant", "il y a 5min", "il y a 3h", "il y a 2j", "14/03/2025"
  */
 fun formatTimeAgo(isoDate: String?): String {
     if (isoDate.isNullOrBlank()) return ""
@@ -88,7 +88,7 @@ fun formatTimeAgo(isoDate: String?): String {
     val days = ChronoUnit.DAYS.between(instant, now)
 
     return when {
-        minutes < 1 -> "a l'instant"
+        minutes < 1 -> "à l'instant"
         minutes < 60 -> "il y a ${minutes}min"
         hours < 24 -> "il y a ${hours}h"
         days < 7 -> "il y a ${days}j"
