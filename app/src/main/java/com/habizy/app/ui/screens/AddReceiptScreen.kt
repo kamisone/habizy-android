@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -80,6 +81,8 @@ import com.habizy.app.data.remote.ApiClient
 import com.habizy.app.data.repository.CatalogRepository
 import com.habizy.app.data.repository.ReceiptRepository
 import com.habizy.app.data.repository.RotationRepository
+import com.habizy.app.data.repository.ShoppingRepository
+import com.habizy.app.data.repository.StorageRepository
 import com.habizy.app.ui.components.TopBarWithBack
 import com.habizy.app.ui.theme.BorderColor
 import com.habizy.app.ui.theme.CardBackground
@@ -102,6 +105,7 @@ private data class ReceiptLineItem(
     val id: UUID = UUID.randomUUID(),
     val name: String,
     val price: Double,
+    val quantity: Int = 1,
     val category: String,
 )
 
@@ -118,6 +122,8 @@ fun AddReceiptScreen(
     val receiptRepository = remember { ReceiptRepository(ApiClient.apiService) }
     val rotationRepository = remember { RotationRepository(ApiClient.apiService) }
     val catalogRepository = remember { CatalogRepository(ApiClient.apiService) }
+    val shoppingRepository = remember { ShoppingRepository(ApiClient.apiService) }
+    val storageRepository = remember { StorageRepository(ApiClient.apiService) }
 
     // Turn check state
     var isCheckingTurn by remember { mutableStateOf(true) }
@@ -159,6 +165,7 @@ fun AddReceiptScreen(
     // Price dialog state
     var articleToAdd by remember { mutableStateOf<CatalogArticle?>(null) }
     var priceInput by remember { mutableStateOf("") }
+    var quantityInput by remember { mutableStateOf(1) }
 
     // Camera launcher
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -539,7 +546,7 @@ fun AddReceiptScreen(
                                             color = DarkText,
                                         )
                                         Text(
-                                            text = item.category,
+                                            text = "${item.category} · x${item.quantity}",
                                             fontFamily = DmSansFamily,
                                             fontSize = 12.sp,
                                             color = SubtitleText,
@@ -623,11 +630,23 @@ fun AddReceiptScreen(
                                 try {
                                     val colocationId = tokenManager.getColocationId()
                                         ?: throw Exception("Colocation introuvable")
+
+                                    // Upload photo if one was captured
+                                    var uploadedPhotoUrl: String? = null
+                                    val bitmap = capturedBitmap
+                                    if (bitmap != null) {
+                                        val stream = java.io.ByteArrayOutputStream()
+                                        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream)
+                                        uploadedPhotoUrl = storageRepository
+                                            .uploadImage(stream.toByteArray(), "receipts")
+                                            .getOrNull()
+                                    }
+
                                     val items = lineItems.map { li ->
                                         CreateReceiptItemRequest(
                                             name = li.name,
                                             price = li.price,
-                                            quantity = 1,
+                                            quantity = li.quantity,
                                             category = li.category,
                                         )
                                     }
@@ -638,9 +657,21 @@ fun AddReceiptScreen(
                                         date = selectedDate,
                                         time = selectedTime,
                                         totalAmount = totalAmount,
-                                        photoUrl = null,
+                                        photoUrl = uploadedPhotoUrl,
                                         items = items,
                                     ).getOrThrow()
+
+                                    // Delete shopping items whose names match the receipt articles
+                                    val lineItemNames = lineItems
+                                        .map { it.name.trim().lowercase() }
+                                        .toSet()
+                                    val shoppingItems = shoppingRepository
+                                        .getList(colocationId)
+                                        .getOrNull() ?: emptyList()
+                                    shoppingItems
+                                        .filter { it.name.trim().lowercase() in lineItemNames }
+                                        .forEach { shoppingRepository.delete(it.id) }
+
                                     onReceiptCreated()
                                     onBack()
                                 } catch (e: Exception) {
@@ -768,6 +799,7 @@ fun AddReceiptScreen(
                                         .clickable {
                                             articleToAdd = article
                                             priceInput = ""
+                                            quantityInput = 1
                                             showCatalogSheet = false
                                         }
                                         .padding(vertical = 12.dp, horizontal = 4.dp),
@@ -813,33 +845,86 @@ fun AddReceiptScreen(
                     )
                 },
                 text = {
-                    OutlinedTextField(
-                        value = priceInput,
-                        onValueChange = { priceInput = it },
-                        placeholder = {
+                    Column {
+                        // Quantity stepper
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
                             Text(
-                                text = "Prix en €",
+                                text = "Quantité",
                                 fontFamily = DmSansFamily,
-                                color = SubtitleText,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp,
+                                color = DarkText,
                             )
-                        },
-                        textStyle = TextStyle(
-                            fontFamily = DmSansFamily,
-                            fontSize = 16.sp,
-                            color = DarkText,
-                        ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = CardBackground,
-                            unfocusedContainerColor = CardBackground,
-                            focusedBorderColor = GreenPrimary,
-                            unfocusedBorderColor = BorderColor,
-                            cursorColor = GreenPrimary,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = { if (quantityInput > 1) quantityInput-- },
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Remove,
+                                        contentDescription = "Diminuer",
+                                        tint = if (quantityInput > 1) GreenPrimary else SubtitleText,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                Text(
+                                    text = "$quantityInput",
+                                    fontFamily = FredokaFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 18.sp,
+                                    color = DarkText,
+                                    modifier = Modifier.width(32.dp),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                )
+                                IconButton(
+                                    onClick = { quantityInput++ },
+                                    modifier = Modifier.size(36.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Augmenter",
+                                        tint = GreenPrimary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Price field
+                        OutlinedTextField(
+                            value = priceInput,
+                            onValueChange = { priceInput = it },
+                            placeholder = {
+                                Text(
+                                    text = "Prix total en €",
+                                    fontFamily = DmSansFamily,
+                                    color = SubtitleText,
+                                )
+                            },
+                            textStyle = TextStyle(
+                                fontFamily = DmSansFamily,
+                                fontSize = 16.sp,
+                                color = DarkText,
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = CardBackground,
+                                unfocusedContainerColor = CardBackground,
+                                focusedBorderColor = GreenPrimary,
+                                unfocusedBorderColor = BorderColor,
+                                cursorColor = GreenPrimary,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 },
                 confirmButton = {
                     TextButton(
@@ -850,6 +935,7 @@ fun AddReceiptScreen(
                                     ReceiptLineItem(
                                         name = articleToAdd!!.name,
                                         price = price,
+                                        quantity = quantityInput,
                                         category = articleToAdd!!.category,
                                     )
                                 )

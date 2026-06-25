@@ -53,8 +53,7 @@ class RotationViewModel(application: Application) : AndroidViewModel(application
     val isMyTurn: Boolean
         get() {
             val userId = _currentUserId.value ?: return false
-            val activeEntries = _entries.value.filter { it.isDisabled != true }
-            return activeEntries.firstOrNull()?.user?.id == userId
+            return _entries.value.firstOrNull { it.status == "current" }?.user?.id == userId
         }
 
     init {
@@ -65,33 +64,33 @@ class RotationViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            try {
+                val colocationId = tokenManager.getColocationId()
+                if (colocationId == null) {
+                    _errorMessage.value = "Aucune colocation"
+                    return@launch
+                }
 
-            val colocationId = tokenManager.getColocationId()
-            if (colocationId == null) {
-                _errorMessage.value = "Aucune colocation"
+                val meDeferred = async { authRepository.getMe() }
+                val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
+
+                val me = meDeferred.await().getOrNull()
+                val rotationResult = rotationDeferred.await()
+
+                if (me != null) {
+                    _currentUserId.value = me.id
+                    _isAdmin.value = me.isAdmin
+                }
+
+                rotationResult.onSuccess {
+                    _entries.value = it
+                    _hasReordered.value = false
+                }.onFailure { e ->
+                    _errorMessage.value = e.message ?: "Erreur chargement rotation"
+                }
+            } finally {
                 _isLoading.value = false
-                return@launch
             }
-
-            val meDeferred = async { authRepository.getMe() }
-            val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
-
-            val me = meDeferred.await().getOrNull()
-            val rotationResult = rotationDeferred.await()
-
-            if (me != null) {
-                _currentUserId.value = me.id
-                _isAdmin.value = me.isAdmin
-            }
-
-            rotationResult.onSuccess {
-                _entries.value = it
-                _hasReordered.value = false
-            }.onFailure { e ->
-                _errorMessage.value = e.message ?: "Erreur chargement rotation"
-            }
-
-            _isLoading.value = false
         }
     }
 

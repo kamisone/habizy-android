@@ -25,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.History
@@ -65,6 +66,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.habizy.app.data.model.ReceiptResponse
+import com.habizy.app.data.model.ShoppingItemResponse
 import com.habizy.app.ui.components.AnimatedCounter
 import com.habizy.app.ui.components.RoommateAvatar
 import com.habizy.app.ui.components.ShimmerHomeLoading
@@ -443,11 +446,19 @@ private fun LoadedContent(
         Spacer(modifier = Modifier.height(14.dp))
 
         // -- Shopping preview card --
-        if (data.shoppingItemCount > 0 || data.shoppingPreview.isNotEmpty()) {
-            ShoppingPreviewCard(
-                items = data.shoppingPreview.map { it.name },
-                totalCount = data.shoppingItemCount,
-                onClick = onNavigateToShopping,
+        ShoppingPreviewCard(
+            items = data.shoppingPreview,
+            totalCount = data.shoppingItemCount,
+            onClick = onNavigateToShopping,
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // -- Last receipt card (shown after completing a turn) --
+        if (data.lastMyReceipt != null) {
+            LastReceiptCard(
+                receipt = data.lastMyReceipt,
+                onClick = onNavigateToHistory,
             )
             Spacer(modifier = Modifier.height(14.dp))
         }
@@ -687,7 +698,7 @@ private fun CurrentShopperCard(
 
 @Composable
 private fun ShoppingPreviewCard(
-    items: List<String>,
+    items: List<ShoppingItemResponse>,
     totalCount: Int,
     onClick: () -> Unit,
 ) {
@@ -698,7 +709,7 @@ private fun ShoppingPreviewCard(
             .clip(RoundedCornerShape(22.dp))
             .background(CardBackground)
             .clickable { onClick() }
-            .padding(20.dp),
+            .padding(16.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -713,51 +724,129 @@ private fun ShoppingPreviewCard(
                 color = DarkText,
             )
             Text(
-                text = "$totalCount",
-                fontFamily = FredokaFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
+                text = "$totalCount à acheter",
+                fontFamily = DmSansFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
                 color = GreenPrimary,
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        items.forEach { itemName ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
+        if (items.isEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Aucun article manquant",
+                fontFamily = DmSansFamily,
+                fontSize = 13.sp,
+                color = SubtitleText,
+            )
+        } else {
+            Spacer(modifier = Modifier.height(12.dp))
+            items.forEach { item ->
+                Row(
                     modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(GreenPrimary),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(GreenPrimary),
+                    )
+                    Spacer(modifier = Modifier.width(11.dp))
+                    Text(
+                        text = item.name,
+                        fontFamily = DmSansFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        color = DarkText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = "x${item.quantity}",
+                        fontFamily = DmSansFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.sp,
+                        color = SubtitleText,
+                    )
+                }
+            }
+
+            val remaining = totalCount - items.size
+            if (remaining > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = itemName,
+                    text = "Voir les $remaining autres articles",
                     fontFamily = DmSansFamily,
-                    fontSize = 14.sp,
-                    color = DarkText,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    color = GreenPrimary,
                 )
             }
         }
+    }
+}
 
-        if (totalCount > items.size) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Voir les ${totalCount - items.size} autres",
-                fontFamily = DmSansFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 13.sp,
-                color = GreenPrimary,
+// -- Last receipt card --
+
+@Composable
+private fun LastReceiptCard(
+    receipt: ReceiptResponse,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(CardBackground)
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(GreenPrimary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = GreenPrimary,
+                modifier = Modifier.size(24.dp),
             )
         }
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Ton ticket a été enregistré",
+                fontFamily = DmSansFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = DarkText,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "${receipt.store} · ${formatEuro(receipt.totalAmount)}",
+                fontFamily = DmSansFamily,
+                fontSize = 13.sp,
+                color = SubtitleText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = SubtitleText,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

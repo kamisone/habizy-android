@@ -31,9 +31,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,6 +86,15 @@ fun RotationScreen(
 
     val snackbarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && !viewModel.isLoading.value) viewModel.load()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Show error snackbar
     LaunchedEffect(errorMessage) {
@@ -132,8 +145,7 @@ fun RotationScreen(
                     Spacer(Modifier.height(8.dp))
 
                     // Header card with green gradient
-                    val activeEntries = entries.filter { it.isDisabled != true }
-                    val currentPerson = activeEntries.firstOrNull()
+                    val currentPerson = entries.firstOrNull { it.status == "current" }
 
                     Box(
                         modifier = Modifier

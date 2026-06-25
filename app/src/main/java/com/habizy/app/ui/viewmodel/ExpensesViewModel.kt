@@ -8,6 +8,7 @@ import com.habizy.app.data.model.ExpenseStatsResponse
 import com.habizy.app.data.model.ReceiptResponse
 import com.habizy.app.data.remote.ApiClient
 import com.habizy.app.data.repository.AuthRepository
+import com.habizy.app.data.repository.ColocationRepository
 import com.habizy.app.data.repository.ReceiptRepository
 import com.habizy.app.data.repository.RotationRepository
 import kotlinx.coroutines.async
@@ -21,6 +22,7 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
     private val tokenManager = TokenManager(application)
     private val api = ApiClient.apiService
     private val authRepository = AuthRepository(api, tokenManager)
+    private val colocationRepository = ColocationRepository(api, tokenManager)
     private val receiptRepository = ReceiptRepository(api)
     private val rotationRepository = RotationRepository(api)
 
@@ -51,6 +53,9 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
 
+    private val _gapThreshold = MutableStateFlow(50.0)
+    val gapThreshold: StateFlow<Double> = _gapThreshold.asStateFlow()
+
     init {
         load()
     }
@@ -62,43 +67,50 @@ class ExpensesViewModel(application: Application) : AndroidViewModel(application
                 if (isRefresh) _isRefreshing.value = true else _isLoading.value = true
                 _errorMessage.value = null
             }
+            try {
+                val colocationId = tokenManager.getColocationId()
+                if (colocationId == null) {
+                    if (!silent) _errorMessage.value = "Aucune colocation"
+                    return@launch
+                }
 
-            val colocationId = tokenManager.getColocationId()
-            if (colocationId == null) {
+                val meDeferred = async { authRepository.getMe() }
+                val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
+                val statsDeferred = async { receiptRepository.getStats(colocationId) }
+                val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
+                val colocationDeferred = async { colocationRepository.getMyColocation() }
+
+                val me = meDeferred.await().getOrNull()
+                val receiptsResult = receiptsDeferred.await()
+                val statsResult = statsDeferred.await()
+                val rotationResult = rotationDeferred.await()
+                val colocationResult = colocationDeferred.await()
+
+                colocationResult.getOrNull()?.colocation?.spendingGapThreshold
+                    ?.takeIf { it > 0 }
+                    ?.let { _gapThreshold.value = it }
+
+                receiptsResult.onSuccess {
+                    _receipts.value = it.sortedWith(
+                        compareByDescending<ReceiptResponse> { r -> r.date }
+                            .thenByDescending { r -> r.time ?: "" }
+                    )
+                }.onFailure { if (!silent) _errorMessage.value = it.message ?: "Erreur chargement tickets" }
+
+                statsResult.onSuccess { _stats.value = it }
+
+                val rotation = rotationResult.getOrNull() ?: emptyList()
+                val currentShopper = rotation.firstOrNull { it.status == "current" }
+                _currentPurchaserName.value = currentShopper?.user?.name
+
+                if (me != null) {
+                    _isAdmin.value = me.isAdmin
+                    _isMyTurn.value = currentShopper?.user?.id == me.id
+                }
+            } finally {
                 if (!silent) {
-                    _errorMessage.value = "Aucune colocation"
                     if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
                 }
-                return@launch
-            }
-
-            val meDeferred = async { authRepository.getMe() }
-            val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
-            val statsDeferred = async { receiptRepository.getStats(colocationId) }
-            val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
-
-            val me = meDeferred.await().getOrNull()
-            val receiptsResult = receiptsDeferred.await()
-            val statsResult = statsDeferred.await()
-            val rotationResult = rotationDeferred.await()
-
-            receiptsResult.onSuccess { _receipts.value = it }
-                .onFailure { if (!silent) _errorMessage.value = it.message ?: "Erreur chargement tickets" }
-
-            statsResult.onSuccess { _stats.value = it }
-
-            val rotation = rotationResult.getOrNull() ?: emptyList()
-            val activeEntries = rotation.filter { it.isDisabled != true }
-            val currentShopper = activeEntries.firstOrNull()
-            _currentPurchaserName.value = currentShopper?.user?.name
-
-            if (me != null) {
-                _isAdmin.value = me.isAdmin
-                _isMyTurn.value = currentShopper?.user?.id == me.id
-            }
-
-            if (!silent) {
-                if (isRefresh) _isRefreshing.value = false else _isLoading.value = false
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.habizy.app.data.local.TokenManager
 import com.habizy.app.data.model.ColocationResponse
+import com.habizy.app.data.model.ReceiptResponse
 import com.habizy.app.data.model.ReportResponse
 import com.habizy.app.data.model.RotationEntryResponse
 import com.habizy.app.data.model.ShoppingItemResponse
@@ -35,7 +36,8 @@ data class HomeData(
     val daysUntilTurn: String,
     val isMyTurn: Boolean,
     val colocationId: String,
-    val recentReports: List<ReportResponse>
+    val recentReports: List<ReportResponse>,
+    val lastMyReceipt: ReceiptResponse? = null,
 )
 
 sealed class HomeState {
@@ -72,66 +74,69 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             if (!silent) {
                 if (isRefresh) _isRefreshing.value = true else _state.value = HomeState.Loading
             }
-
-            val meResult = authRepository.getMe()
-            val me = meResult.getOrNull()
-            if (me == null) {
-                if (!isRefresh && !silent) {
-                    _state.value = HomeState.Error(meResult.exceptionOrNull()?.userMessage() ?: "Une erreur inattendue est survenue")
+            try {
+                val meResult = authRepository.getMe()
+                val me = meResult.getOrNull()
+                if (me == null) {
+                    if (!isRefresh && !silent) {
+                        _state.value = HomeState.Error(meResult.exceptionOrNull()?.userMessage() ?: "Une erreur inattendue est survenue")
+                    }
+                    return@launch
                 }
-                if (!silent) _isRefreshing.value = false
-                return@launch
-            }
 
-            val colocationResult = colocationRepository.getMyColocation()
-            val colocationDetail = colocationResult.getOrNull()
-            if (colocationDetail == null) {
-                if (!isRefresh && !silent) _state.value = HomeState.NoColocation
-                if (!silent) _isRefreshing.value = false
-                return@launch
-            }
+                val colocationResult = colocationRepository.getMyColocation()
+                val colocationDetail = colocationResult.getOrNull()
+                if (colocationDetail == null) {
+                    if (!isRefresh && !silent) _state.value = HomeState.NoColocation
+                    return@launch
+                }
 
-            val colocationId = colocationDetail.colocation.id
+                val colocationId = colocationDetail.colocation.id
 
-            val statsDeferred = async { receiptRepository.getStats(colocationId) }
-            val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
-            val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
-            val reportsDeferred = async { reportRepository.getReports(colocationId) }
+                val statsDeferred = async { receiptRepository.getStats(colocationId) }
+                val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
+                val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
+                val reportsDeferred = async { reportRepository.getReports(colocationId) }
+                val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
 
-            val stats = statsDeferred.await().getOrNull()
-            val rotation = rotationDeferred.await().getOrNull() ?: emptyList()
-            val shoppingItems = shoppingDeferred.await().getOrNull() ?: emptyList()
-            val reports = reportsDeferred.await().getOrNull() ?: emptyList()
+                val stats = statsDeferred.await().getOrNull()
+                val rotation = rotationDeferred.await().getOrNull() ?: emptyList()
+                val shoppingItems = shoppingDeferred.await().getOrNull() ?: emptyList()
+                val reports = reportsDeferred.await().getOrNull() ?: emptyList()
+                val receipts = receiptsDeferred.await().getOrNull() ?: emptyList()
 
-            val mySpent = stats?.byRoommate
-                ?.find { it.user?.id == me.id }
-                ?.total ?: 0.0
+                val mySpent = stats?.byRoommate
+                    ?.find { it.user?.id == me.id }
+                    ?.total ?: 0.0
 
-            val activeEntries = rotation.filter { it.isDisabled != true }
-            val currentShopper = activeEntries.firstOrNull()
-            val daysUntilTurn = computeDaysUntilTurn(me.id, activeEntries)
-            val isMyTurn = currentShopper?.user?.id == me.id
+                val currentShopper = rotation.firstOrNull { it.status == "current" }
+                val daysUntilTurn = computeDaysUntilTurn(me.id, rotation)
+                val isMyTurn = currentShopper?.user?.id == me.id
 
-            val uncheckedItems = shoppingItems.filter { !it.isChecked }
+                val uncheckedItems = shoppingItems.filter { !it.isChecked }
+                val lastMyReceipt = receipts.firstOrNull { it.user.id == me.id }
 
-            _state.value = HomeState.Loaded(
-                HomeData(
-                    userName = me.name,
-                    totalSpent = stats?.totalSpent ?: 0.0,
-                    mySpent = mySpent,
-                    memberCount = colocationDetail.members.size,
-                    currentShopperName = currentShopper?.user?.name ?: "",
-                    currentShopperColor = currentShopper?.user?.colorHex,
-                    currentShopperInitial = currentShopper?.user?.initial,
-                    shoppingItemCount = uncheckedItems.size,
-                    shoppingPreview = uncheckedItems.take(3),
-                    daysUntilTurn = daysUntilTurn,
-                    isMyTurn = isMyTurn,
-                    colocationId = colocationId,
-                    recentReports = reports.take(3)
+                _state.value = HomeState.Loaded(
+                    HomeData(
+                        userName = me.name,
+                        totalSpent = stats?.totalSpent ?: 0.0,
+                        mySpent = mySpent,
+                        memberCount = colocationDetail.members.size,
+                        currentShopperName = currentShopper?.user?.name ?: "",
+                        currentShopperColor = currentShopper?.user?.colorHex,
+                        currentShopperInitial = currentShopper?.user?.initial,
+                        shoppingItemCount = uncheckedItems.size,
+                        shoppingPreview = uncheckedItems.take(3),
+                        daysUntilTurn = daysUntilTurn,
+                        isMyTurn = isMyTurn,
+                        colocationId = colocationId,
+                        recentReports = reports.take(3),
+                        lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
+                    )
                 )
-            )
-            if (!silent) _isRefreshing.value = false
+            } finally {
+                if (!silent) _isRefreshing.value = false
+            }
         }
     }
 
@@ -153,18 +158,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun computeDaysUntilTurn(
         userId: String,
-        activeEntries: List<RotationEntryResponse>
+        entries: List<RotationEntryResponse>
     ): String {
+        val activeEntries = entries.filter { it.isDisabled != true }
         if (activeEntries.isEmpty()) return ""
 
-        val currentIndex = 0
+        val currentIndex = activeEntries.indexOfFirst { it.status == "current" }
+        if (currentIndex == -1) return ""
         val myIndex = activeEntries.indexOfFirst { it.user.id == userId }
         if (myIndex == -1) return ""
 
-        if (myIndex == currentIndex) return "c'est ton tour"
-        if (myIndex == 1) return "tu es le prochain"
-
-        val turnsAway = myIndex - currentIndex
-        return "dans $turnsAway tours"
+        val turnsAway = (myIndex - currentIndex + activeEntries.size) % activeEntries.size
+        return when (turnsAway) {
+            0 -> "c'est ton tour"
+            1 -> "tu es le prochain"
+            else -> "dans $turnsAway tours"
+        }
     }
 }

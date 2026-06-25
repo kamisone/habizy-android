@@ -213,7 +213,9 @@ private fun MainNavigation(
             composable(Screen.AddReceipt.route) {
                 AddReceiptScreen(
                     onBack = { navController.popBackStack() },
-                    onReceiptCreated = { navController.popBackStack() },
+                    onReceiptCreated = {
+                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                    },
                 )
             }
             composable(Screen.Notifications.route) {

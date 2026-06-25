@@ -44,7 +44,10 @@ class ReceiptViewModel(application: Application) : AndroidViewModel(application)
 
             val result = receiptRepository.getReceipts(colocationId)
             result.onSuccess {
-                _receipts.value = it
+                _receipts.value = it.sortedWith(
+                    compareByDescending<ReceiptResponse> { r -> r.date }
+                        .thenByDescending { r -> r.time ?: "" }
+                )
             }.onFailure { e ->
                 _errorMessage.value = e.message ?: "Erreur chargement tickets"
             }

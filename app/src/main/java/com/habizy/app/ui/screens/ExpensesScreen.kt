@@ -2,6 +2,8 @@ package com.habizy.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Receipt
@@ -26,6 +30,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -35,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,11 +50,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -72,6 +81,7 @@ import com.habizy.app.ui.theme.DmSansFamily
 import com.habizy.app.ui.theme.FredokaFamily
 import com.habizy.app.ui.theme.GreenLight
 import com.habizy.app.ui.theme.GreenPrimary
+import com.habizy.app.ui.theme.Orange
 import com.habizy.app.ui.theme.InfoBg
 import com.habizy.app.ui.theme.InfoText
 import com.habizy.app.ui.theme.LightText
@@ -95,6 +105,7 @@ fun ExpensesScreen(
     val currentPurchaserName by viewModel.currentPurchaserName.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val successMessage by viewModel.successMessage.collectAsStateWithLifecycle()
+    val gapThreshold by viewModel.gapThreshold.collectAsStateWithLifecycle()
 
     val snackbarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
@@ -191,6 +202,24 @@ fun ExpensesScreen(
                 if (stats != null) {
                     val expenseStats = stats!!
 
+                    val spendingGap = expenseStats.byRoommate
+                        .takeIf { it.size >= 2 }
+                        ?.map { it.total }
+                        ?.let { totals -> totals.max() - totals.min() }
+
+                    val gapColor = when {
+                        spendingGap == null -> GreenPrimary
+                        spendingGap >= gapThreshold -> CoralRed
+                        spendingGap >= gapThreshold * 0.5 -> Orange
+                        else -> GreenPrimary
+                    }
+                    val gapLabel = when {
+                        spendingGap == null -> ""
+                        spendingGap >= gapThreshold -> "Déséquilibré"
+                        spendingGap >= gapThreshold * 0.5 -> "Attention"
+                        else -> "Équilibré"
+                    }
+
                     // Total card
                     Box(
                         modifier = Modifier
@@ -200,42 +229,88 @@ fun ExpensesScreen(
                             .background(CardBackground)
                             .padding(20.dp),
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Total dépensé",
-                                    fontFamily = DmSansFamily,
-                                    fontWeight = FontWeight.Normal,
-                                    fontSize = 13.sp,
-                                    color = SubtitleText,
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = String.format("%.2f €", expenseStats.totalSpent)
-                                        .replace(".", ","),
-                                    fontFamily = FredokaFamily,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 28.sp,
-                                    color = DarkText,
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(GreenPrimary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center,
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Receipt,
-                                    contentDescription = null,
-                                    tint = GreenPrimary,
-                                    modifier = Modifier.size(24.dp),
-                                )
+                                Column {
+                                    Text(
+                                        text = "Total dépensé",
+                                        fontFamily = DmSansFamily,
+                                        fontWeight = FontWeight.Normal,
+                                        fontSize = 13.sp,
+                                        color = SubtitleText,
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = String.format("%.2f €", expenseStats.totalSpent)
+                                            .replace(".", ","),
+                                        fontFamily = FredokaFamily,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 28.sp,
+                                        color = DarkText,
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(GreenPrimary.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Receipt,
+                                        contentDescription = null,
+                                        tint = GreenPrimary,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
+                            }
+
+                            if (spendingGap != null) {
+                                Spacer(Modifier.height(14.dp))
+                                HorizontalDivider(color = DividerColor)
+                                Spacer(Modifier.height(12.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Écart entre colocataires",
+                                            fontFamily = DmSansFamily,
+                                            fontWeight = FontWeight.Normal,
+                                            fontSize = 13.sp,
+                                            color = SubtitleText,
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(gapColor.copy(alpha = 0.12f))
+                                                .padding(horizontal = 8.dp, vertical = 3.dp),
+                                        ) {
+                                            Text(
+                                                text = gapLabel,
+                                                fontFamily = DmSansFamily,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 11.sp,
+                                                color = gapColor,
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = String.format("%.2f €", spendingGap)
+                                            .replace(".", ","),
+                                        fontFamily = FredokaFamily,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 22.sp,
+                                        color = gapColor,
+                                    )
+                                }
                             }
                         }
                     }
@@ -515,7 +590,13 @@ private fun ReceiptRow(
             )
             Spacer(Modifier.height(2.dp))
             Text(
-                text = receipt.date,
+                text = buildString {
+                    append(receipt.date)
+                    if (!receipt.time.isNullOrBlank()) {
+                        append(" · ")
+                        append(receipt.time)
+                    }
+                },
                 fontFamily = DmSansFamily,
                 fontWeight = FontWeight.Normal,
                 fontSize = 11.sp,
@@ -540,6 +621,69 @@ private fun ReceiptDetailSheet(
     isAdmin: Boolean,
     onDelete: (String) -> Unit,
 ) {
+    var showFullscreen by remember { mutableStateOf(false) }
+
+    if (showFullscreen && !receipt.photoUrl.isNullOrBlank()) {
+        Dialog(
+            onDismissRequest = { showFullscreen = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = false,
+            ),
+        ) {
+            var scale by remember { mutableFloatStateOf(1f) }
+            var offsetX by remember { mutableFloatStateOf(0f) }
+            var offsetY by remember { mutableFloatStateOf(0f) }
+            val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
+                scale = (scale * zoomChange).coerceIn(1f, 5f)
+                if (scale > 1f) {
+                    offsetX += panChange.x
+                    offsetY += panChange.y
+                } else {
+                    offsetX = 0f
+                    offsetY = 0f
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+            ) {
+                AsyncImage(
+                    model = receipt.photoUrl,
+                    contentDescription = "Photo du ticket",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale,
+                            translationX = offsetX,
+                            translationY = offsetY,
+                        )
+                        .transformable(state = transformableState),
+                )
+                IconButton(
+                    onClick = { showFullscreen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.5f)),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Fermer",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -555,7 +699,8 @@ private fun ReceiptDetailSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { showFullscreen = true },
                 contentScale = ContentScale.Crop,
             )
             Spacer(Modifier.height(16.dp))
