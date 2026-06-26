@@ -421,8 +421,8 @@ private fun LoadedContent(
             // Mon tour
             StatMiniCard(
                 title = "Mon tour",
-                value = data.daysUntilTurn,
-                valueColor = DarkText,
+                value = if (data.isUserDisabled) "Désactivé" else data.daysUntilTurn,
+                valueColor = if (data.isUserDisabled) SubtitleText else DarkText,
                 modifier = Modifier.weight(1f),
             )
             // Mes depenses

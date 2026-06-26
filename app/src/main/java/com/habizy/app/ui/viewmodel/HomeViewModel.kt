@@ -36,6 +36,7 @@ data class HomeData(
     val shoppingPreview: List<ShoppingItemResponse>,
     val daysUntilTurn: String,
     val isMyTurn: Boolean,
+    val isUserDisabled: Boolean,
     val colocationId: String,
     val recentReports: List<ReportResponse>,
     val lastMyReceipt: ReceiptResponse? = null,
@@ -123,6 +124,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                             ?.total ?: prev?.mySpent ?: 0.0
 
                         val currentShopper = rotation.firstOrNull { it.status == "current" }
+                        val isUserDisabled = rotation.any { it.user.id == me.id && it.isDisabled == true }
                         val daysUntilTurn = computeDaysUntilTurn(me.id, rotation)
                         val isMyTurn = currentShopper?.user?.id == me.id
 
@@ -145,6 +147,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                                 shoppingPreview = shoppingPreview,
                                 daysUntilTurn = daysUntilTurn.ifEmpty { prev?.daysUntilTurn ?: "" },
                                 isMyTurn = isMyTurn,
+                                isUserDisabled = isUserDisabled,
                                 colocationId = colocationId,
                                 recentReports = recentReports,
                                 lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
