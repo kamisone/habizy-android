@@ -244,5 +244,5 @@ interface ApiService {
 /** Small request body for device registration. */
 data class RegisterDeviceRequest(
     val platform: String,
-    val token: String
+    val fcmToken: String
 )

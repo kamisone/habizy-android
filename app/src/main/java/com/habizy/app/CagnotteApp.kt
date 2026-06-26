@@ -45,7 +45,7 @@ class CagnotteApp : Application() {
                     if (accessToken != null) {
                         try {
                             ApiClient.apiService.registerDevice(
-                                RegisterDeviceRequest(platform = "android", token = token)
+                                RegisterDeviceRequest(platform = "android", fcmToken = token)
                             )
                         } catch (_: Exception) {
                             // Silently ignore — AuthViewModel.registerFcmDevice() will

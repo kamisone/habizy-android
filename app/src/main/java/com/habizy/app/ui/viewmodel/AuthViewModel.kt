@@ -107,7 +107,7 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         try {
             val fcmToken = tokenManager.getFcmToken()
             if (fcmToken != null) {
-                api.registerDevice(RegisterDeviceRequest(platform = "android", token = fcmToken))
+                api.registerDevice(RegisterDeviceRequest(platform = "android", fcmToken = fcmToken))
             }
         } catch (_: Exception) {
             // Silently ignore device registration failures

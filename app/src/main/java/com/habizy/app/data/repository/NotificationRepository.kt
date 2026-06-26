@@ -7,7 +7,7 @@ import com.habizy.app.data.remote.RegisterDeviceRequest
 class NotificationRepository(private val api: ApiService) {
 
     suspend fun registerDevice(platform: String, token: String): Result<Unit> = runCatching {
-        api.registerDevice(RegisterDeviceRequest(platform = platform, token = token))
+        api.registerDevice(RegisterDeviceRequest(platform = platform, fcmToken = token))
     }
 
     suspend fun unregisterDevice(token: String): Result<Unit> = runCatching {
