@@ -4,4 +4,12 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <!-- Splash: cream background + transparent icon so the OS never shows the small
+         circled adaptive icon — the Compose AppSplashScreen handles the full logo. -->
+    <style name="Theme.Cagnotte.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FBF7F0</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_blank</item>
+        <item name="postSplashScreenTheme">@style/Theme.Cagnotte</item>
+    </style>
 </resources>
