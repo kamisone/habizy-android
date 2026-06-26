@@ -178,7 +178,7 @@ class ReportDetailViewModel(application: Application) : AndroidViewModel(applica
             result.onSuccess { newComment ->
                 val current = _detail.value
                 if (current != null) {
-                    _detail.value = current.copy(comments = current.comments + newComment)
+                    _detail.value = current.copy(comments = (current.comments ?: emptyList()) + newComment)
                 }
             }.onFailure { e ->
                 _errorMessage.value = e.userMessage()
@@ -558,14 +558,14 @@ fun ReportDetailScreen(
                 ) {
                     Column {
                         Text(
-                            text = "Commentaires (${report.comments.size})",
+                            text = "Commentaires (${report.comments?.size ?: 0})",
                             fontFamily = FredokaFamily,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
                             color = DarkText,
                         )
 
-                        if (report.comments.isEmpty()) {
+                        if (report.comments.isNullOrEmpty()) {
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 text = "Aucun commentaire pour le moment",
@@ -576,7 +576,7 @@ fun ReportDetailScreen(
                             )
                         } else {
                             Spacer(Modifier.height(12.dp))
-                            report.comments.forEachIndexed { index, comment ->
+                            report.comments?.forEachIndexed { index, comment ->
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -624,7 +624,7 @@ fun ReportDetailScreen(
                                         )
                                     }
                                 }
-                                if (index < report.comments.lastIndex) {
+                                if (index < (report.comments?.lastIndex ?: -1)) {
                                     HorizontalDivider(
                                         color = DividerColor,
                                         modifier = Modifier.padding(start = 40.dp),
