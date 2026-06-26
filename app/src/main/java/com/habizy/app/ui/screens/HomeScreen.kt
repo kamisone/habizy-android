@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -92,6 +93,7 @@ import com.habizy.app.ui.theme.SubtitleText
 import com.habizy.app.ui.viewmodel.HomeData
 import com.habizy.app.ui.viewmodel.HomeState
 import com.habizy.app.ui.viewmodel.HomeViewModel
+import com.habizy.app.ui.viewmodel.MenageHomeData
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -448,7 +450,7 @@ private fun LoadedContent(
         Spacer(modifier = Modifier.height(14.dp))
 
         // -- Ménage section --
-        MenageSection(onClick = onNavigateToMenage)
+        MenageSection(menage = data.menage, onClick = onNavigateToMenage)
 
         // -- Signalements section --
         if (data.recentReports.isNotEmpty()) {
@@ -747,32 +749,177 @@ private fun SectionActionButton(
 // -- Ménage section card --
 
 @Composable
-private fun MenageSection(onClick: () -> Unit) {
-    Row(
+private fun MenageSection(
+    menage: MenageHomeData?,
+    onClick: () -> Unit,
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp, RoundedCornerShape(22.dp))
             .clip(RoundedCornerShape(22.dp))
             .background(CardBackground)
             .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(20.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(Orange.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Default.CleaningServices, null, tint = Orange, modifier = Modifier.size(24.dp))
+        // Header
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Orange.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.CleaningServices, null, tint = Orange, modifier = Modifier.size(24.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Ménage", fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = DarkText)
+                Text("Cette semaine", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
+            }
+            Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(20.dp))
         }
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Ménage", fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = DarkText)
-            Text("Planifier et suivre le ménage", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
+
+        if (menage != null) {
+            Spacer(Modifier.height(16.dp))
+
+            // Personal status pill
+            val done = menage.myDone
+            val statusColor = if (done) GreenPrimary else Orange
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(statusColor.copy(alpha = 0.1f))
+                    .padding(horizontal = 14.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = if (done) Icons.Default.CheckCircle else Icons.Default.CleaningServices,
+                    contentDescription = null,
+                    tint = statusColor,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = if (done) "Tu as fait ton ménage !" else "À faire cette semaine",
+                    fontFamily = DmSansFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = statusColor,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${menage.doneCount}/${menage.totalCount}",
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = statusColor,
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Progression label + count
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Progression de la coloc", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
+                Text(
+                    "${menage.doneCount} sur ${menage.totalCount}",
+                    fontFamily = DmSansFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    color = DarkText,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+
+            // Progress bar
+            val progress = if (menage.totalCount > 0) menage.doneCount.toFloat() / menage.totalCount else 0f
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(DividerColor),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(GreenPrimary),
+                )
+            }
+
+            // Member avatars
+            if (menage.board.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    menage.board.take(7).forEach { member ->
+                        Box(contentAlignment = Alignment.BottomEnd) {
+                            RoommateAvatar(
+                                colorHex = member.colorHex ?: "#888888",
+                                initial = member.initial ?: member.name.take(1).uppercase(),
+                                size = 38.dp,
+                                cornerRadius = 12.dp,
+                                fontSize = 14.sp,
+                            )
+                            // Status dot
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .clip(CircleShape)
+                                    .background(CardBackground)
+                                    .padding(2.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                        .background(if (member.done) GreenPrimary else Color(0xFFDDDDDD)),
+                                )
+                            }
+                        }
+                    }
+                    val overflow = menage.board.size - minOf(7, menage.board.size)
+                    if (overflow > 0) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(DividerColor),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("+$overflow", fontFamily = DmSansFamily, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = SubtitleText)
+                        }
+                    }
+                }
+            }
+
+            // Task description
+            if (!menage.taskDescription.isNullOrBlank()) {
+                Spacer(Modifier.height(14.dp))
+                HorizontalDivider(color = DividerColor)
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.Top) {
+                    Icon(Icons.Default.CheckCircle, null, tint = SubtitleText, modifier = Modifier.size(14.dp).padding(top = 1.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = menage.taskDescription,
+                        fontFamily = DmSansFamily,
+                        fontSize = 13.sp,
+                        color = SubtitleText,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
-        Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(20.dp))
     }
 }
 

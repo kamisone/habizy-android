@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.habizy.app.data.local.TokenManager
 import com.habizy.app.data.model.ColocationResponse
+import com.habizy.app.data.model.MenageBoardMember
 import com.habizy.app.data.model.ReceiptResponse
 import com.habizy.app.data.model.ReportResponse
 import com.habizy.app.data.model.RotationEntryResponse
@@ -24,6 +25,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import com.habizy.app.util.userMessage
 
+data class MenageHomeData(
+    val myDone: Boolean,
+    val doneCount: Int,
+    val totalCount: Int,
+    val taskDescription: String?,
+    val board: List<MenageBoardMember>,
+)
+
 data class HomeData(
     val userName: String,
     val totalSpent: Double,
@@ -37,6 +46,7 @@ data class HomeData(
     val daysUntilTurn: String,
     val isMyTurn: Boolean,
     val isUserDisabled: Boolean,
+    val menage: MenageHomeData?,
     val colocationId: String,
     val recentReports: List<ReportResponse>,
     val lastMyReceipt: ReceiptResponse? = null,
@@ -104,12 +114,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
                         val reportsDeferred = async { reportRepository.getReports(colocationId) }
                         val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
+                        val menageDeferred = async { runCatching { api.getMenageWeek(colocationId) } }
 
                         val statsResult = statsDeferred.await()
                         val rotationResult = rotationDeferred.await()
                         val shoppingResult = shoppingDeferred.await()
                         val reportsResult = reportsDeferred.await()
                         val receiptsResult = receiptsDeferred.await()
+                        val menageResult = menageDeferred.await()
 
                         val stats = statsResult.getOrNull()
                         val rotation = rotationResult.getOrNull() ?: emptyList()
@@ -134,6 +146,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                         val recentReports = if (reportsResult.isSuccess) reports.take(3) else prev?.recentReports ?: emptyList()
                         val lastMyReceipt = if (receiptsResult.isSuccess) receipts.firstOrNull { it.user.id == me.id } else prev?.lastMyReceipt
 
+                        val menageWeek = menageResult.getOrNull()
+                        val menage = if (menageWeek != null) MenageHomeData(
+                            myDone = menageWeek.board.any { it.userId == me.id && it.done },
+                            doneCount = menageWeek.totalDone,
+                            totalCount = menageWeek.totalMembers,
+                            taskDescription = menageWeek.taskDescription,
+                            board = menageWeek.board,
+                        ) else prev?.menage
+
                         _state.value = HomeState.Loaded(
                             HomeData(
                                 userName = me.name,
@@ -148,6 +169,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                                 daysUntilTurn = daysUntilTurn.ifEmpty { prev?.daysUntilTurn ?: "" },
                                 isMyTurn = isMyTurn,
                                 isUserDisabled = isUserDisabled,
+                                menage = menage,
                                 colocationId = colocationId,
                                 recentReports = recentReports,
                                 lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
