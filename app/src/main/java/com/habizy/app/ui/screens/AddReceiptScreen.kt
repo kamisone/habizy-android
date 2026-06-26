@@ -673,7 +673,6 @@ fun AddReceiptScreen(
                                         .forEach { shoppingRepository.delete(it.id) }
 
                                     onReceiptCreated()
-                                    onBack()
                                 } catch (e: Exception) {
                                     errorMessage = e.userMessage()
                                 } finally {
