@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import com.habizy.app.util.userMessage
 
 data class HomeData(
@@ -92,55 +93,78 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val colocationId = colocationDetail.colocation.id
+                val prev = (_state.value as? HomeState.Loaded)?.data
 
-                val statsDeferred = async { receiptRepository.getStats(colocationId) }
-                val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
-                val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
-                val reportsDeferred = async { reportRepository.getReports(colocationId) }
-                val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
+                // 15 s hard cap on secondary fetches — prevents infinite spinner on slow networks
+                try {
+                    withTimeout(15_000L) {
+                        val statsDeferred = async { receiptRepository.getStats(colocationId) }
+                        val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
+                        val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
+                        val reportsDeferred = async { reportRepository.getReports(colocationId) }
+                        val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
 
-                val stats = statsDeferred.await().getOrNull()
-                val rotation = rotationDeferred.await().getOrNull() ?: emptyList()
-                val shoppingItems = shoppingDeferred.await().getOrNull() ?: emptyList()
-                val reports = reportsDeferred.await().getOrNull() ?: emptyList()
-                val receipts = receiptsDeferred.await().getOrNull() ?: emptyList()
+                        val statsResult = statsDeferred.await()
+                        val rotationResult = rotationDeferred.await()
+                        val shoppingResult = shoppingDeferred.await()
+                        val reportsResult = reportsDeferred.await()
+                        val receiptsResult = receiptsDeferred.await()
 
-                val mySpent = stats?.byRoommate
-                    ?.find { it.user?.id == me.id }
-                    ?.total ?: 0.0
+                        val stats = statsResult.getOrNull()
+                        val rotation = rotationResult.getOrNull() ?: emptyList()
+                        val shoppingItems = shoppingResult.getOrNull() ?: emptyList()
+                        val reports = reportsResult.getOrNull() ?: emptyList()
+                        val receipts = receiptsResult.getOrNull() ?: emptyList()
 
-                val currentShopper = rotation.firstOrNull { it.status == "current" }
-                val daysUntilTurn = computeDaysUntilTurn(me.id, rotation)
-                val isMyTurn = currentShopper?.user?.id == me.id
+                        // Fall back to previous values so a partial failure never shows zeros
+                        val totalSpent = stats?.totalSpent ?: prev?.totalSpent ?: 0.0
+                        val mySpent = stats?.byRoommate
+                            ?.find { it.user?.id == me.id }
+                            ?.total ?: prev?.mySpent ?: 0.0
 
-                val uncheckedItems = shoppingItems.filter { !it.isChecked }
-                val lastMyReceipt = receipts.firstOrNull { it.user.id == me.id }
+                        val currentShopper = rotation.firstOrNull { it.status == "current" }
+                        val daysUntilTurn = computeDaysUntilTurn(me.id, rotation)
+                        val isMyTurn = currentShopper?.user?.id == me.id
 
-                _state.value = HomeState.Loaded(
-                    HomeData(
-                        userName = me.name,
-                        totalSpent = stats?.totalSpent ?: 0.0,
-                        mySpent = mySpent,
-                        memberCount = colocationDetail.members.size,
-                        currentShopperName = currentShopper?.user?.name ?: "",
-                        currentShopperColor = currentShopper?.user?.colorHex,
-                        currentShopperInitial = currentShopper?.user?.initial,
-                        shoppingItemCount = uncheckedItems.size,
-                        shoppingPreview = uncheckedItems.take(3),
-                        daysUntilTurn = daysUntilTurn,
-                        isMyTurn = isMyTurn,
-                        colocationId = colocationId,
-                        recentReports = reports.take(3),
-                        lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
-                    )
-                )
+                        val uncheckedItems = shoppingItems.filter { !it.isChecked }
+                        val shoppingItemCount = if (shoppingResult.isSuccess) uncheckedItems.size else prev?.shoppingItemCount ?: 0
+                        val shoppingPreview = if (shoppingResult.isSuccess) uncheckedItems.take(3) else prev?.shoppingPreview ?: emptyList()
+                        val recentReports = if (reportsResult.isSuccess) reports.take(3) else prev?.recentReports ?: emptyList()
+                        val lastMyReceipt = if (receiptsResult.isSuccess) receipts.firstOrNull { it.user.id == me.id } else prev?.lastMyReceipt
+
+                        _state.value = HomeState.Loaded(
+                            HomeData(
+                                userName = me.name,
+                                totalSpent = totalSpent,
+                                mySpent = mySpent,
+                                memberCount = colocationDetail.members.size,
+                                currentShopperName = currentShopper?.user?.name ?: prev?.currentShopperName ?: "",
+                                currentShopperColor = currentShopper?.user?.colorHex ?: prev?.currentShopperColor,
+                                currentShopperInitial = currentShopper?.user?.initial ?: prev?.currentShopperInitial,
+                                shoppingItemCount = shoppingItemCount,
+                                shoppingPreview = shoppingPreview,
+                                daysUntilTurn = daysUntilTurn.ifEmpty { prev?.daysUntilTurn ?: "" },
+                                isMyTurn = isMyTurn,
+                                colocationId = colocationId,
+                                recentReports = recentReports,
+                                lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
+                            )
+                        )
+                    }
+                } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                    // Timeout: keep previous state, spinner will be dismissed by finally
+                }
             } finally {
                 if (!silent) _isRefreshing.value = false
             }
         }
     }
 
-    fun refresh() = load(isRefresh = true)
+    fun refresh() {
+        if (_isRefreshing.value) return  // Prevent concurrent pull-to-refresh calls
+        load(isRefresh = true)
+    }
+
     fun silentRefresh() = load(silent = true)
 
     fun createColocation(name: String) {
