@@ -415,31 +415,8 @@ private fun LoadedContent(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // -- Stats row --
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Mon tour
-            StatMiniCard(
-                title = "Mon tour",
-                value = if (data.isUserDisabled) "Désactivé" else data.daysUntilTurn,
-                valueColor = if (data.isUserDisabled) SubtitleText else DarkText,
-                modifier = Modifier.weight(1f),
-            )
-            // Mes depenses
-            StatMiniCard(
-                title = "Mes dépenses",
-                value = "-${formatEuro(data.mySpent)}",
-                valueColor = CoralRed,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        // -- Faire les courses section --
-        CoursesSection(
+        // -- Les courses card --
+        LesCoursesCard(
             data = data,
             onNavigateToRotation = onNavigateToRotation,
             onNavigateToShopping = onNavigateToShopping,
@@ -511,43 +488,10 @@ private fun SpendingCard(
     }
 }
 
-// -- Stat mini card --
+// -- Les courses card (Mon tour + Mes dépenses + shopping) --
 
 @Composable
-private fun StatMiniCard(
-    title: String,
-    value: String,
-    valueColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .shadow(6.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .background(CardBackground)
-            .padding(16.dp),
-    ) {
-        Text(
-            text = title,
-            fontFamily = DmSansFamily,
-            fontSize = 13.sp,
-            color = SubtitleText,
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = value,
-            fontFamily = FredokaFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            color = valueColor,
-        )
-    }
-}
-
-// -- Faire les courses section card --
-
-@Composable
-private fun CoursesSection(
+private fun LesCoursesCard(
     data: HomeData,
     onNavigateToRotation: () -> Unit,
     onNavigateToShopping: () -> Unit,
@@ -561,28 +505,78 @@ private fun CoursesSection(
             .clip(RoundedCornerShape(22.dp))
             .background(CardBackground),
     ) {
-        // Section header
+        // Header
         Row(
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(GreenPrimary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.ShoppingCart, null, tint = GreenPrimary, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.ShoppingCart, null, tint = GreenPrimary, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(10.dp))
             Text(
-                text = "Faire les courses",
+                text = "Les courses",
                 fontFamily = FredokaFamily,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 17.sp,
+                fontSize = 18.sp,
                 color = DarkText,
+                modifier = Modifier.weight(1f),
             )
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // Stat boxes: Mon tour + Mes dépenses
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ScreenBackground)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Text("Mon tour", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = if (data.isUserDisabled) "Désactivé" else data.daysUntilTurn.ifEmpty { "—" },
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = if (data.isUserDisabled) SubtitleText else DarkText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(ScreenBackground)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Text("Mes dépenses", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "-${formatEuro(data.mySpent)}",
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = CoralRed,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
 
         Spacer(Modifier.height(14.dp))
@@ -717,14 +711,14 @@ private fun CoursesSection(
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SectionActionButton(icon = Icons.Default.BarChart, label = "Statistiques", color = Purple, onClick = onNavigateToStats, modifier = Modifier.weight(1f))
-            SectionActionButton(icon = Icons.Default.History, label = "Historique", color = Blue, onClick = onNavigateToHistory, modifier = Modifier.weight(1f))
+            CourseActionButton(icon = Icons.Default.BarChart, label = "Statistiques", color = Purple, onClick = onNavigateToStats, modifier = Modifier.weight(1f))
+            CourseActionButton(icon = Icons.Default.History, label = "Historique", color = Blue, onClick = onNavigateToHistory, modifier = Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun SectionActionButton(
+private fun CourseActionButton(
     icon: ImageVector,
     label: String,
     color: Color,

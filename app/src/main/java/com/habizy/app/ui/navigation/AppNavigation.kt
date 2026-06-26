@@ -164,7 +164,16 @@ private fun MainNavigation(
                     onNavigateToShopping = { navController.navigate(Screen.Shopping.route) },
                     onNavigateToStats = { navController.navigate(Screen.Stats.route) },
                     onNavigateToHistory = { navController.navigate(Screen.PurchaseHistory.route) },
-                    onNavigateToMenage = { navController.navigate(Screen.Menage.route) },
+                    onNavigateToMenage = {
+                        // Ménage is a tab — treat this as a tab switch, not a stack push
+                        val menageIndex = tabRoutes.indexOf(Screen.Menage.route)
+                        selectedTab = menageIndex
+                        navController.navigate(Screen.Menage.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     onNavigateToReportDetail = { id ->
                         navController.navigate(Screen.ReportDetail.createRoute(id))
                     },
