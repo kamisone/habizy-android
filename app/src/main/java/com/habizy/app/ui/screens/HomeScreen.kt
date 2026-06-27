@@ -92,6 +92,7 @@ import com.habizy.app.ui.theme.Purple
 import com.habizy.app.ui.theme.ScreenBackground
 import com.habizy.app.ui.theme.SubtitleText
 import com.habizy.app.ui.theme.tagColor
+import com.habizy.app.ui.theme.toComposeColor
 import com.habizy.app.ui.viewmodel.HomeData
 import com.habizy.app.ui.viewmodel.HomeState
 import com.habizy.app.ui.viewmodel.HomeViewModel
@@ -1007,19 +1008,22 @@ private fun SignalementsSection(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(report.title, fontFamily = DmSansFamily, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = DarkText, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    val tags = report.tags?.take(3)
-                    if (!tags.isNullOrEmpty()) {
+                    val tagDetails = report.tagDetails?.take(3)
+                        ?: report.tags?.take(3)?.map { com.habizy.app.data.model.TagDetail(it) }
+                    if (!tagDetails.isNullOrEmpty()) {
                         Spacer(Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            tags.forEach { tag ->
-                                val chipColor = tagColor(tag)
+                            tagDetails.forEach { detail ->
+                                val chipColor = detail.color
+                                    ?.let { runCatching { it.toComposeColor() }.getOrNull() }
+                                    ?: tagColor(detail.title)
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
                                         .background(chipColor.copy(alpha = 0.13f))
                                         .padding(horizontal = 6.dp, vertical = 2.dp),
                                 ) {
-                                    Text(tag, fontFamily = DmSansFamily, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = chipColor)
+                                    Text(detail.title, fontFamily = DmSansFamily, fontWeight = FontWeight.Medium, fontSize = 10.sp, color = chipColor)
                                 }
                             }
                         }

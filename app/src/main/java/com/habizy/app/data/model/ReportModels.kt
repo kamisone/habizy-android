@@ -29,11 +29,17 @@ data class CreateTagRequest(
 
 // -- Responses --
 
+data class TagDetail(
+    val title: String,
+    val color: String? = null,
+)
+
 data class ReportResponse(
     val id: String,
     val title: String,
     val description: String? = null,
     val tags: List<String>? = null,
+    val tagDetails: List<TagDetail>? = null,
     val photoUrls: List<String>? = null,
     val user: UserResponse,
     val colocationId: String,
@@ -54,6 +60,7 @@ data class ReportDetailResponse(
     val title: String,
     val description: String? = null,
     val tags: List<String>? = null,
+    val tagDetails: List<TagDetail>? = null,
     val photoUrls: List<String>? = null,
     val user: UserResponse,
     val colocationId: String,
