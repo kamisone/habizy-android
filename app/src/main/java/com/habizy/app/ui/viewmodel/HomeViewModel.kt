@@ -76,13 +76,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private var silentJob: kotlinx.coroutines.Job? = null
+
     init {
         load()
     }
 
     fun load(isRefresh: Boolean = false, silent: Boolean = false) {
         if (silent && (_isRefreshing.value || _state.value is HomeState.Loading)) return
-        viewModelScope.launch {
+        val job = viewModelScope.launch {
             if (!silent) {
                 if (isRefresh) _isRefreshing.value = true else _state.value = HomeState.Loading
             }
@@ -181,16 +183,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } finally {
                 if (!silent) _isRefreshing.value = false
+                if (silent) silentJob = null
             }
         }
+        if (silent) silentJob = job
     }
 
     fun refresh() {
-        if (_isRefreshing.value) return  // Prevent concurrent pull-to-refresh calls
+        if (_isRefreshing.value) return
+        silentJob?.cancel()  // stop any in-flight silent refresh so it can't mutate state mid-animation
+        silentJob = null
         load(isRefresh = true)
     }
 
-    fun silentRefresh() = load(silent = true)
+    fun silentRefresh() {
+        if (_isRefreshing.value || _state.value is HomeState.Loading) return
+        if (silentJob?.isActive == true) return  // already refreshing silently
+        load(silent = true)
+    }
 
     fun createColocation(name: String) {
         viewModelScope.launch {
