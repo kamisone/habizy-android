@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
@@ -1032,6 +1033,15 @@ private fun SignalementsSection(
                         fontSize = 12.sp,
                         color = SubtitleText,
                     )
+                }
+                val commentCount = report.commentCount ?: 0
+                if (commentCount > 0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.ChatBubbleOutline, null, tint = SubtitleText, modifier = Modifier.size(13.dp))
+                        Spacer(Modifier.width(3.dp))
+                        Text("$commentCount", fontFamily = DmSansFamily, fontSize = 11.sp, color = SubtitleText)
+                    }
+                    Spacer(Modifier.width(8.dp))
                 }
                 Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(18.dp))
             }
