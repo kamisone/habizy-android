@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -633,6 +634,34 @@ private fun LesCoursesCard(
                     Text(data.currentShopperName, fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = Color.White)
                 }
                 Icon(Icons.Default.ChevronRight, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(22.dp))
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(ScreenBackground)
+                    .border(1.dp, DividerColor, RoundedCornerShape(16.dp))
+                    .clickable { onNavigateToRotation() }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .background(DividerColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Default.Refresh, null, tint = SubtitleText, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Ordre non configuré", fontFamily = FredokaFamily, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = DarkText)
+                    Text("Configurer l'ordre de passage", fontFamily = DmSansFamily, fontSize = 12.sp, color = SubtitleText)
+                }
+                Icon(Icons.Default.ChevronRight, null, tint = SubtitleText, modifier = Modifier.size(22.dp))
             }
         }
 
