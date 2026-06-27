@@ -39,7 +39,10 @@ import com.habizy.app.ui.screens.CreateUserScreen
 import com.habizy.app.ui.screens.DecideForMeScreen
 import com.habizy.app.ui.screens.ExpensesScreen
 import com.habizy.app.ui.screens.HomeScreen
+import com.habizy.app.ui.screens.JoinScreen
 import com.habizy.app.ui.screens.LoginScreen
+import com.habizy.app.ui.screens.RegisterScreen
+import com.habizy.app.ui.screens.WelcomeScreen
 import com.habizy.app.ui.screens.MembersScreen
 import com.habizy.app.ui.screens.MenageScreen
 import com.habizy.app.ui.screens.NotificationsScreen
@@ -82,12 +85,25 @@ private fun AuthNavigation() {
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route,
+        startDestination = Screen.Welcome.route,
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
     ) {
+        composable(Screen.Welcome.route) {
+            WelcomeScreen(
+                onLogin = { navController.navigate(Screen.Login.route) },
+                onCreateAccount = { navController.navigate(Screen.Register.route) },
+                onJoinColocation = { navController.navigate(Screen.Join.route) },
+            )
+        }
         composable(Screen.Login.route) {
             LoginScreen()
+        }
+        composable(Screen.Register.route) {
+            RegisterScreen()
+        }
+        composable(Screen.Join.route) {
+            JoinScreen()
         }
     }
 }

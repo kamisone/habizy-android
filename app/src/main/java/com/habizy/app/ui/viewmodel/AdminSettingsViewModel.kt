@@ -5,9 +5,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.habizy.app.data.local.TokenManager
 import com.habizy.app.data.model.ColocationDetailResponse
+import com.habizy.app.data.model.ColocationMemberResponse
 import com.habizy.app.data.remote.ApiClient
 import com.habizy.app.data.repository.ColocationRepository
 import com.habizy.app.data.repository.RotationRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +24,12 @@ class AdminSettingsViewModel(application: Application) : AndroidViewModel(applic
 
     private val _colocation = MutableStateFlow<ColocationDetailResponse?>(null)
     val colocation: StateFlow<ColocationDetailResponse?> = _colocation.asStateFlow()
+
+    private val _members = MutableStateFlow<List<ColocationMemberResponse>>(emptyList())
+    val members: StateFlow<List<ColocationMemberResponse>> = _members.asStateFlow()
+
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -53,15 +61,20 @@ class AdminSettingsViewModel(application: Application) : AndroidViewModel(applic
             _isLoading.value = true
             _errorMessage.value = null
 
-            val result = colocationRepository.getMyColocation()
-            result.onSuccess { detail ->
+            val colocationDeferred = async { colocationRepository.getMyColocation() }
+            val meDeferred = async { runCatching { api.getMe() } }
+
+            colocationDeferred.await().onSuccess { detail ->
                 _colocation.value = detail
+                _members.value = detail.members
                 _colocationName.value = detail.colocation.name
                 _spendingGapThreshold.value = detail.colocation.spendingGapThreshold?.toString() ?: ""
                 _notificationsEnabled.value = detail.colocation.notificationsEnabled != false
             }.onFailure { e ->
                 _errorMessage.value = e.message ?: "Erreur chargement paramètres"
             }
+
+            meDeferred.await().onSuccess { me -> _currentUserId.value = me.id }
 
             _isLoading.value = false
         }
@@ -129,6 +142,24 @@ class AdminSettingsViewModel(application: Application) : AndroidViewModel(applic
             }
 
             _isSaving.value = false
+        }
+    }
+
+    fun toggleAdmin(targetUserId: String) {
+        viewModelScope.launch {
+            runCatching { api.toggleAdmin(targetUserId) }
+                .onSuccess { response ->
+                    _members.value = _members.value.map { member ->
+                        if (member.user.id == targetUserId)
+                            member.copy(user = member.user.copy(isAdmin = response.isAdmin))
+                        else member
+                    }
+                    val action = if (response.isAdmin) "promu admin" else "retiré des admins"
+                    _successMessage.value = "Membre $action"
+                }
+                .onFailure { e ->
+                    _errorMessage.value = e.message ?: "Erreur modification admin"
+                }
         }
     }
 

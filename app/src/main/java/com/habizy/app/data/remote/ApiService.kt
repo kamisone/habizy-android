@@ -10,6 +10,9 @@ interface ApiService {
     @POST("auth/register")
     suspend fun register(@Body body: RegisterRequest): CreateUserResponse
 
+    @POST("auth/register-admin")
+    suspend fun registerAdmin(@Body body: RegisterRequest): CreateUserResponse
+
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): AuthResponse
 
@@ -30,6 +33,9 @@ interface ApiService {
 
     @POST("auth/refresh")
     suspend fun refreshToken(@Body body: RefreshTokenRequest): AuthResponse
+
+    @PATCH("auth/users/{userId}/toggle-admin")
+    suspend fun toggleAdmin(@Path("userId") userId: String): ToggleAdminResponse
 
     // -- Colocation --
 

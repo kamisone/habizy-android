@@ -14,6 +14,12 @@ class AuthRepository(
         response
     }
 
+    suspend fun registerAdmin(name: String, email: String, password: String): Result<Unit> = runCatching {
+        api.registerAdmin(RegisterRequest(name, email, password))
+        val loginResponse = api.login(LoginRequest(email, password))
+        tokenManager.saveAuthResponse(loginResponse)
+    }
+
     suspend fun joinColocation(inviteCode: String): Result<AuthResponse> = runCatching {
         val response = api.joinColocation(JoinColocationRequest(inviteCode))
         tokenManager.saveTokens(response.accessToken, response.refreshToken)

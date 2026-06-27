@@ -15,16 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -40,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -72,6 +78,8 @@ fun AdminSettingsScreen(
     viewModel: AdminSettingsViewModel = viewModel(),
 ) {
     val colocation by viewModel.colocation.collectAsStateWithLifecycle()
+    val members by viewModel.members.collectAsStateWithLifecycle()
+    val currentUserId by viewModel.currentUserId.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isSaving by viewModel.isSaving.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
@@ -84,6 +92,7 @@ fun AdminSettingsScreen(
     val context = LocalContext.current
 
     var copiedLabel by remember { mutableStateOf(false) }
+    var pendingToggleMember by remember { mutableStateOf<com.habizy.app.data.model.ColocationMemberResponse?>(null) }
 
     // Error snackbar
     LaunchedEffect(errorMessage) {
@@ -328,7 +337,129 @@ fun AdminSettingsScreen(
                         fontSize = 14.sp,
                     )
                 }
+
+                // ── Admin management card ───────────────────────────
+                val otherMembers = members.filter { it.user.id != currentUserId }
+                if (otherMembers.isNotEmpty()) {
+                    Spacer(Modifier.height(20.dp))
+
+                    Text(
+                        text = "Gestion des admins",
+                        fontFamily = FredokaFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = DarkText,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(8.dp, RoundedCornerShape(22.dp))
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(CardBackground)
+                            .padding(vertical = 8.dp),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            otherMembers.forEach { member ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .clip(CircleShape)
+                                            .background(GreenPrimary.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = member.user.initial ?: member.user.name.take(1).uppercase(),
+                                            fontFamily = DmSansFamily,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp,
+                                            color = GreenPrimary,
+                                        )
+                                    }
+
+                                    Spacer(Modifier.width(12.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = member.user.name,
+                                            fontFamily = DmSansFamily,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 14.sp,
+                                            color = DarkText,
+                                        )
+                                        if (member.user.isAdmin) {
+                                            Text(
+                                                text = "Admin",
+                                                fontFamily = DmSansFamily,
+                                                fontSize = 12.sp,
+                                                color = GreenPrimary,
+                                            )
+                                        }
+                                    }
+
+                                    IconButton(
+                                        onClick = { pendingToggleMember = member },
+                                    ) {
+                                        Icon(
+                                            imageVector = if (member.user.isAdmin) Icons.Filled.Shield else Icons.Outlined.Shield,
+                                            contentDescription = if (member.user.isAdmin) "Retirer admin" else "Rendre admin",
+                                            tint = if (member.user.isAdmin) GreenPrimary else SubtitleText,
+                                            modifier = Modifier.size(22.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+
+    // Confirmation dialog
+    pendingToggleMember?.let { member ->
+        val willBeAdmin = !member.user.isAdmin
+        AlertDialog(
+            onDismissRequest = { pendingToggleMember = null },
+            title = {
+                Text(
+                    text = if (willBeAdmin) "Promouvoir admin ?" else "Retirer les droits admin ?",
+                    fontFamily = DmSansFamily,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            },
+            text = {
+                Text(
+                    text = if (willBeAdmin)
+                        "${member.user.name} pourra gérer la colocation."
+                    else
+                        "${member.user.name} ne sera plus administrateur.",
+                    fontFamily = DmSansFamily,
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.toggleAdmin(member.user.id)
+                        pendingToggleMember = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                ) {
+                    Text("Confirmer", fontFamily = DmSansFamily)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingToggleMember = null }) {
+                    Text("Annuler", fontFamily = DmSansFamily, color = SubtitleText)
+                }
+            },
+        )
     }
 }

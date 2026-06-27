@@ -6,8 +6,10 @@ package com.habizy.app.ui.navigation
 sealed class Screen(val route: String) {
 
     // Auth
+    data object Welcome : Screen("welcome")
     data object Login : Screen("login")
     data object Register : Screen("register")
+    data object Join : Screen("join")
 
     // Main tabs
     data object Home : Screen("home")

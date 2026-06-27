@@ -25,11 +25,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private val _isJoinLoading = MutableStateFlow(false)
     val isJoinLoading: StateFlow<Boolean> = _isJoinLoading.asStateFlow()
 
+    private val _isRegisterLoading = MutableStateFlow(false)
+    val isRegisterLoading: StateFlow<Boolean> = _isRegisterLoading.asStateFlow()
+
     private val _loginError = MutableStateFlow<String?>(null)
     val loginError: StateFlow<String?> = _loginError.asStateFlow()
 
     private val _joinError = MutableStateFlow<String?>(null)
     val joinError: StateFlow<String?> = _joinError.asStateFlow()
+
+    private val _registerError = MutableStateFlow<String?>(null)
+    val registerError: StateFlow<String?> = _registerError.asStateFlow()
 
     val isLoggedIn = tokenManager.isLoggedIn
     val profileCompleted = tokenManager.profileCompleted
@@ -95,12 +101,27 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun registerAdmin(name: String, email: String, password: String) {
+        viewModelScope.launch {
+            _isRegisterLoading.value = true
+            _registerError.value = null
+            authRepository.registerAdmin(name, email, password).onFailure { e ->
+                _registerError.value = e.userMessage()
+            }
+            _isRegisterLoading.value = false
+        }
+    }
+
     fun clearLoginError() {
         _loginError.value = null
     }
 
     fun clearJoinError() {
         _joinError.value = null
+    }
+
+    fun clearRegisterError() {
+        _registerError.value = null
     }
 
     private suspend fun registerFcmDevice() {

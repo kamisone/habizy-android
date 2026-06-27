@@ -59,3 +59,7 @@ data class CreateUserResponse(
     val user: UserResponse,
     val generatedPassword: String? = null
 )
+
+data class ToggleAdminResponse(
+    val isAdmin: Boolean
+)
