@@ -83,107 +83,109 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun load(isRefresh: Boolean = false, silent: Boolean = false) {
-        if (silent && (_isRefreshing.value || _state.value is HomeState.Loading)) return
-        val job = viewModelScope.launch {
+        if (silent && _state.value is HomeState.Loading) return
+        var job: kotlinx.coroutines.Job? = null
+        job = viewModelScope.launch {
             if (!silent) {
                 if (isRefresh) _isRefreshing.value = true else _state.value = HomeState.Loading
             }
             try {
-                val meResult = authRepository.getMe()
-                val me = meResult.getOrNull()
-                if (me == null) {
-                    if (!isRefresh && !silent) {
-                        _state.value = HomeState.Error(meResult.exceptionOrNull()?.userMessage() ?: "Une erreur inattendue est survenue")
+                // Single 15 s cap covers all requests including getMe/getMyColocation, so the
+                // spinner can never freeze beyond that on a bad connection.
+                withTimeout(15_000L) {
+                    val meResult = authRepository.getMe()
+                    val me = meResult.getOrNull()
+                    if (me == null) {
+                        if (!isRefresh && !silent) {
+                            _state.value = HomeState.Error(meResult.exceptionOrNull()?.userMessage() ?: "Une erreur inattendue est survenue")
+                        }
+                        return@withTimeout
                     }
-                    return@launch
-                }
 
-                val colocationResult = colocationRepository.getMyColocation()
-                val colocationDetail = colocationResult.getOrNull()
-                if (colocationDetail == null) {
-                    if (!isRefresh && !silent) _state.value = HomeState.NoColocation
-                    return@launch
-                }
+                    val colocationResult = colocationRepository.getMyColocation()
+                    val colocationDetail = colocationResult.getOrNull()
+                    if (colocationDetail == null) {
+                        if (!isRefresh && !silent) _state.value = HomeState.NoColocation
+                        return@withTimeout
+                    }
 
-                val colocationId = colocationDetail.colocation.id
-                val prev = (_state.value as? HomeState.Loaded)?.data
+                    val colocationId = colocationDetail.colocation.id
+                    val prev = (_state.value as? HomeState.Loaded)?.data
 
-                // 15 s hard cap on secondary fetches — prevents infinite spinner on slow networks
-                try {
-                    withTimeout(15_000L) {
-                        val statsDeferred = async { receiptRepository.getStats(colocationId) }
-                        val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
-                        val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
-                        val reportsDeferred = async { reportRepository.getReports(colocationId) }
-                        val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
-                        val menageDeferred = async { runCatching { api.getMenageWeek(colocationId) } }
+                    val statsDeferred = async { receiptRepository.getStats(colocationId) }
+                    val rotationDeferred = async { rotationRepository.getRotation(colocationId) }
+                    val shoppingDeferred = async { shoppingRepository.getList(colocationId) }
+                    val reportsDeferred = async { reportRepository.getReports(colocationId) }
+                    val receiptsDeferred = async { receiptRepository.getReceipts(colocationId) }
+                    val menageDeferred = async { runCatching { api.getMenageWeek(colocationId) } }
 
-                        val statsResult = statsDeferred.await()
-                        val rotationResult = rotationDeferred.await()
-                        val shoppingResult = shoppingDeferred.await()
-                        val reportsResult = reportsDeferred.await()
-                        val receiptsResult = receiptsDeferred.await()
-                        val menageResult = menageDeferred.await()
+                    val statsResult = statsDeferred.await()
+                    val rotationResult = rotationDeferred.await()
+                    val shoppingResult = shoppingDeferred.await()
+                    val reportsResult = reportsDeferred.await()
+                    val receiptsResult = receiptsDeferred.await()
+                    val menageResult = menageDeferred.await()
 
-                        val stats = statsResult.getOrNull()
-                        val rotation = rotationResult.getOrNull() ?: emptyList()
-                        val shoppingItems = shoppingResult.getOrNull() ?: emptyList()
-                        val reports = reportsResult.getOrNull() ?: emptyList()
-                        val receipts = receiptsResult.getOrNull() ?: emptyList()
+                    val stats = statsResult.getOrNull()
+                    val rotation = rotationResult.getOrNull() ?: emptyList()
+                    val shoppingItems = shoppingResult.getOrNull() ?: emptyList()
+                    val reports = reportsResult.getOrNull() ?: emptyList()
+                    val receipts = receiptsResult.getOrNull() ?: emptyList()
 
-                        // Fall back to previous values so a partial failure never shows zeros
-                        val totalSpent = stats?.totalSpent ?: prev?.totalSpent ?: 0.0
-                        val mySpent = stats?.byRoommate
-                            ?.find { it.user?.id == me.id }
-                            ?.total ?: prev?.mySpent ?: 0.0
+                    // Fall back to previous values so a partial failure never shows zeros
+                    val totalSpent = stats?.totalSpent ?: prev?.totalSpent ?: 0.0
+                    val mySpent = stats?.byRoommate
+                        ?.find { it.user?.id == me.id }
+                        ?.total ?: prev?.mySpent ?: 0.0
 
-                        val currentShopper = rotation.firstOrNull { it.status == "current" }
-                        val isUserDisabled = rotation.any { it.user.id == me.id && it.isDisabled == true }
-                        val daysUntilTurn = computeDaysUntilTurn(me.id, rotation)
-                        val isMyTurn = currentShopper?.user?.id == me.id
+                    val currentShopper = rotation.firstOrNull { it.status == "current" }
+                    val isUserDisabled = rotation.any { it.user.id == me.id && it.isDisabled == true }
+                    val daysUntilTurn = computeDaysUntilTurn(me.id, rotation)
+                    val isMyTurn = currentShopper?.user?.id == me.id
 
-                        val uncheckedItems = shoppingItems.filter { !it.isChecked }
-                        val shoppingItemCount = if (shoppingResult.isSuccess) uncheckedItems.size else prev?.shoppingItemCount ?: 0
-                        val shoppingPreview = if (shoppingResult.isSuccess) uncheckedItems.take(3) else prev?.shoppingPreview ?: emptyList()
-                        val recentReports = if (reportsResult.isSuccess) reports.take(3) else prev?.recentReports ?: emptyList()
-                        val lastMyReceipt = if (receiptsResult.isSuccess) receipts.firstOrNull { it.user.id == me.id } else prev?.lastMyReceipt
+                    val uncheckedItems = shoppingItems.filter { !it.isChecked }
+                    val shoppingItemCount = if (shoppingResult.isSuccess) uncheckedItems.size else prev?.shoppingItemCount ?: 0
+                    val shoppingPreview = if (shoppingResult.isSuccess) uncheckedItems.take(3) else prev?.shoppingPreview ?: emptyList()
+                    val recentReports = if (reportsResult.isSuccess) reports.take(3) else prev?.recentReports ?: emptyList()
+                    val lastMyReceipt = if (receiptsResult.isSuccess) receipts.firstOrNull { it.user.id == me.id } else prev?.lastMyReceipt
 
-                        val menageWeek = menageResult.getOrNull()
-                        val menage = if (menageWeek != null) MenageHomeData(
-                            myDone = menageWeek.board.any { it.userId == me.id && it.done },
-                            doneCount = menageWeek.totalDone,
-                            totalCount = menageWeek.totalMembers,
-                            taskDescription = menageWeek.taskDescription,
-                            board = menageWeek.board,
-                        ) else prev?.menage
+                    val menageWeek = menageResult.getOrNull()
+                    val menage = if (menageWeek != null) MenageHomeData(
+                        myDone = menageWeek.board.any { it.userId == me.id && it.done },
+                        doneCount = menageWeek.totalDone,
+                        totalCount = menageWeek.totalMembers,
+                        taskDescription = menageWeek.taskDescription,
+                        board = menageWeek.board,
+                    ) else prev?.menage
 
-                        _state.value = HomeState.Loaded(
-                            HomeData(
-                                userName = me.name,
-                                totalSpent = totalSpent,
-                                mySpent = mySpent,
-                                memberCount = colocationDetail.members.size,
-                                currentShopperName = currentShopper?.user?.name ?: prev?.currentShopperName ?: "",
-                                currentShopperColor = currentShopper?.user?.colorHex ?: prev?.currentShopperColor,
-                                currentShopperInitial = currentShopper?.user?.initial ?: prev?.currentShopperInitial,
-                                shoppingItemCount = shoppingItemCount,
-                                shoppingPreview = shoppingPreview,
-                                daysUntilTurn = daysUntilTurn.ifEmpty { prev?.daysUntilTurn ?: "" },
-                                isMyTurn = isMyTurn,
-                                isUserDisabled = isUserDisabled,
-                                menage = menage,
-                                colocationId = colocationId,
-                                recentReports = recentReports,
-                                lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
-                            )
+                    _state.value = HomeState.Loaded(
+                        HomeData(
+                            userName = me.name,
+                            totalSpent = totalSpent,
+                            mySpent = mySpent,
+                            memberCount = colocationDetail.members.size,
+                            currentShopperName = currentShopper?.user?.name ?: prev?.currentShopperName ?: "",
+                            currentShopperColor = currentShopper?.user?.colorHex ?: prev?.currentShopperColor,
+                            currentShopperInitial = currentShopper?.user?.initial ?: prev?.currentShopperInitial,
+                            shoppingItemCount = shoppingItemCount,
+                            shoppingPreview = shoppingPreview,
+                            daysUntilTurn = daysUntilTurn.ifEmpty { prev?.daysUntilTurn ?: "" },
+                            isMyTurn = isMyTurn,
+                            isUserDisabled = isUserDisabled,
+                            menage = menage,
+                            colocationId = colocationId,
+                            recentReports = recentReports,
+                            lastMyReceipt = if (!isMyTurn) lastMyReceipt else null,
                         )
-                    }
-                } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
-                    // Timeout: keep previous state, spinner will be dismissed by finally
+                    )
                 }
+            } catch (_: kotlinx.coroutines.TimeoutCancellationException) {
+                // Timeout: keep previous state; finally will dismiss the spinner
             } finally {
                 if (!silent) _isRefreshing.value = false
-                if (silent) silentJob = null
+                // Only null-out silentJob if *this* job is still the active one — a newer
+                // silentRefresh() may have already replaced it and we must not clobber that.
+                if (silent && silentJob === job) silentJob = null
             }
         }
         if (silent) silentJob = job
@@ -191,14 +193,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refresh() {
         if (_isRefreshing.value) return
-        silentJob?.cancel()  // stop any in-flight silent refresh so it can't mutate state mid-animation
+        silentJob?.cancel()
         silentJob = null
         load(isRefresh = true)
     }
 
     fun silentRefresh() {
-        if (_isRefreshing.value || _state.value is HomeState.Loading) return
-        if (silentJob?.isActive == true) return  // already refreshing silently
+        if (_state.value is HomeState.Loading) return
+        if (_isRefreshing.value) return
+        // Cancel any stale silent job so the freshest call always wins.
+        // The old job's finally uses identity (silentJob === job) so it won't null out the new job.
+        silentJob?.cancel()
+        silentJob = null
         load(silent = true)
     }
 
