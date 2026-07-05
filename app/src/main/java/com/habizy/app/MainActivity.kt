@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                         isLoggedIn = isLoggedIn,
                         profileCompleted = profileCompleted != false,
                         onLogout = { authViewModel.logout() },
+                        onDeleteAccount = { authViewModel.deleteAccountAndLogout() },
                         deepLinkRoute = deepLinkRoute,
                     )
 

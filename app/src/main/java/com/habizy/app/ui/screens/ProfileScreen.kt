@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.PersonAdd
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +40,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -91,6 +94,7 @@ fun ProfileScreen(
     onNavigateToCreateUser: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     onLogout: () -> Unit,
+    onDeleteAccount: () -> Unit,
     viewModel: ProfileViewModel = viewModel(),
 ) {
     val user by viewModel.user.collectAsStateWithLifecycle()
@@ -119,6 +123,7 @@ fun ProfileScreen(
 
     var showPasswordSheet by remember { mutableStateOf(false) }
     var showNameSheet by remember { mutableStateOf(false) }
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
     val passwordSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val nameSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -457,6 +462,33 @@ fun ProfileScreen(
                         fontSize = 14.sp,
                     )
                 }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Delete account
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDeleteAccountDialog = true }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = SubtitleText,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Supprimer mon compte",
+                        fontFamily = DmSansFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp,
+                        color = SubtitleText,
+                    )
+                }
             }
         }
     }
@@ -494,6 +526,49 @@ fun ProfileScreen(
                 },
             )
         }
+    }
+
+    // Delete account confirmation
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = {
+                Text(
+                    text = "Supprimer mon compte ?",
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    color = DarkText,
+                )
+            },
+            text = {
+                Text(
+                    text = "Cette action est irreversible. Vos informations personnelles " +
+                        "seront anonymisees et vous perdrez l'acces a votre colocation. " +
+                        "Les depenses et taches deja partagees restent visibles pour vos colocataires.",
+                    fontFamily = DmSansFamily,
+                    color = SubtitleText,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteAccountDialog = false
+                    onDeleteAccount()
+                }) {
+                    Text(
+                        text = "Supprimer",
+                        fontFamily = DmSansFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        color = CoralRed,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAccountDialog = false }) {
+                    Text(text = "Annuler", fontFamily = DmSansFamily, color = SubtitleText)
+                }
+            },
+            containerColor = CardBackground,
+        )
     }
 }
 

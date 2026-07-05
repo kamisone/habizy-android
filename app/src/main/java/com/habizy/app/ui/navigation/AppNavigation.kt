@@ -60,6 +60,7 @@ fun AppNavigation(
     isLoggedIn: Boolean,
     profileCompleted: Boolean,
     onLogout: () -> Unit,
+    onDeleteAccount: () -> Unit,
     deepLinkRoute: String? = null,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -69,7 +70,11 @@ fun AppNavigation(
             when {
                 !isLoggedIn -> AuthNavigation()
                 !profileCompleted -> CompleteProfileScreen()
-                else -> MainNavigation(onLogout = onLogout, deepLinkRoute = deepLinkRoute)
+                else -> MainNavigation(
+                    onLogout = onLogout,
+                    onDeleteAccount = onDeleteAccount,
+                    deepLinkRoute = deepLinkRoute,
+                )
             }
 
             AppSnackbarHost(hostState = snackbarHostState)
@@ -113,6 +118,7 @@ private fun AuthNavigation() {
 @Composable
 private fun MainNavigation(
     onLogout: () -> Unit,
+    onDeleteAccount: () -> Unit,
     deepLinkRoute: String? = null,
 ) {
     val navController = rememberNavController()
@@ -217,6 +223,7 @@ private fun MainNavigation(
                     onNavigateToCreateUser = { navController.navigate(Screen.CreateUser.route) },
                     onNavigateToAdmin = { navController.navigate(Screen.AdminSettings.route) },
                     onLogout = onLogout,
+                    onDeleteAccount = onDeleteAccount,
                 )
             }
 
