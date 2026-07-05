@@ -193,6 +193,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refresh() {
         if (_isRefreshing.value) return
+        _isRefreshing.value = true
         silentJob?.cancel()
         silentJob = null
         load(isRefresh = true)
