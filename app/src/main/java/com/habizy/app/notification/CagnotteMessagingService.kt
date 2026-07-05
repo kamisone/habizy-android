@@ -24,6 +24,7 @@ class HabizyMessagingService : FirebaseMessagingService() {
         private const val KEY_FCM_TOKEN = "fcm_token"
     }
 
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         Log.d(TAG, "New FCM token: $token")

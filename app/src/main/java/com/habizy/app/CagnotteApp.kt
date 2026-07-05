@@ -29,7 +29,8 @@ class HabizyApp : Application() {
         // Retrieve and persist the current FCM token so AuthViewModel can
         // register it with the server after login.
         val tokenManager = TokenManager(this)
-        FirebaseMessaging.getInstance().token
+        @Suppress("DEPRECATION")
+        FirebaseMessaging.getInstance().getToken()
             .addOnSuccessListener { token ->
                 Log.d(TAG, "FCM token: $token")
                 CoroutineScope(Dispatchers.IO).launch {

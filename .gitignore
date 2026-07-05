@@ -41,6 +41,7 @@ Thumbs.db
 *.jks
 *.keystore
 keystore.properties
+key.properties
 
 # Firebase (contains sensitive project config)
 # google-services.json
