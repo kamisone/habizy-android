@@ -11,14 +11,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * Application class -- entry point that initializes global singletons,
- * mirroring the iOS CagnotteApp / AppDelegate setup.
- */
-class CagnotteApp : Application() {
+class HabizyApp : Application() {
 
     companion object {
-        private const val TAG = "CagnotteApp"
+        private const val TAG = "HabizyApp"
     }
 
     override fun onCreate() {

@@ -20,14 +20,10 @@ class AuthRepository(
         tokenManager.saveAuthResponse(loginResponse)
     }
 
-    suspend fun joinColocation(inviteCode: String): Result<AuthResponse> = runCatching {
-        val response = api.joinColocation(JoinColocationRequest(inviteCode))
+    suspend fun joinColocation(inviteCode: String, name: String, email: String, password: String?): Result<AuthResponse> = runCatching {
+        val response = api.joinColocation(JoinColocationRequest(inviteCode, name, email, password))
         tokenManager.saveTokens(response.accessToken, response.refreshToken)
-        if (response.profileCompleted != null) {
-            tokenManager.saveProfileCompleted(response.profileCompleted)
-        } else {
-            tokenManager.saveProfileCompleted(false)
-        }
+        tokenManager.saveProfileCompleted(response.profileCompleted ?: true)
         response
     }
 

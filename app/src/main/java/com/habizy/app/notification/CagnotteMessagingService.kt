@@ -16,18 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-/**
- * Firebase Cloud Messaging service.
- *
- * - [onNewToken]: persists the new FCM token in SharedPreferences and registers it
- *   with the backend server.
- * - [onMessageReceived]: displays a local notification with a deep-link intent so
- *   tapping it opens the relevant screen.
- */
-class CagnotteMessagingService : FirebaseMessagingService() {
+class HabizyMessagingService : FirebaseMessagingService() {
 
     companion object {
-        private const val TAG = "CagnotteFCM"
+        private const val TAG = "HabizyFCM"
         private const val PREF_NAME = "fcm_prefs"
         private const val KEY_FCM_TOKEN = "fcm_token"
     }
@@ -38,7 +30,7 @@ class CagnotteMessagingService : FirebaseMessagingService() {
 
         CoroutineScope(Dispatchers.IO).launch {
             // Persist to DataStore so AuthViewModel.registerFcmDevice() can read it after login
-            TokenManager(this@CagnotteMessagingService).saveFcmToken(token)
+            TokenManager(this@HabizyMessagingService).saveFcmToken(token)
             // Register immediately if already logged in
             NotificationRepository(ApiClient.apiService)
                 .registerDevice(platform = "android", token = token)
@@ -79,7 +71,7 @@ class CagnotteMessagingService : FirebaseMessagingService() {
         )
 
         val notification = NotificationCompat.Builder(this, NotificationChannelHelper.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(body)
             .setAutoCancel(true)

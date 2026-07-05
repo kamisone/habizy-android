@@ -12,9 +12,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -31,7 +36,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -56,6 +64,12 @@ fun JoinScreen(viewModel: AuthViewModel = viewModel()) {
     val joinError by viewModel.joinError.collectAsStateWithLifecycle()
 
     var inviteCode by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    val canSubmit = !isJoinLoading && inviteCode.isNotBlank() && name.isNotBlank() && email.isNotBlank()
 
     Column(
         modifier = Modifier
@@ -96,35 +110,84 @@ fun JoinScreen(viewModel: AuthViewModel = viewModel()) {
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "Entre le code d'invitation que tu as reçu",
+            text = "Entre le code d'invitation et tes informations",
             fontFamily = DmSansFamily,
             fontSize = 14.sp,
             color = SubtitleText,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(24.dp))
 
+        // Invite code
         OutlinedTextField(
             value = inviteCode,
             onValueChange = {
                 inviteCode = it
                 viewModel.clearJoinError()
             },
-            placeholder = {
-                Text(text = "Code d'invitation", fontFamily = DmSansFamily, color = SubtitleText)
-            },
+            label = { Text("Code d'invitation", fontFamily = DmSansFamily, color = SubtitleText, fontSize = 13.sp) },
             textStyle = TextStyle(fontFamily = DmSansFamily, fontSize = 16.sp, color = DarkText),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = CardBackground,
-                unfocusedContainerColor = CardBackground,
-                focusedBorderColor = GreenPrimary,
-                unfocusedBorderColor = BorderColor,
-                cursorColor = GreenPrimary,
-            ),
+            colors = fieldColors(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Name
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Prénom et nom", fontFamily = DmSansFamily, color = SubtitleText, fontSize = 13.sp) },
+            textStyle = TextStyle(fontFamily = DmSansFamily, fontSize = 16.sp, color = DarkText),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = fieldColors(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Email
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email", fontFamily = DmSansFamily, color = SubtitleText, fontSize = 13.sp) },
+            textStyle = TextStyle(fontFamily = DmSansFamily, fontSize = 16.sp, color = DarkText),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = fieldColors(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Password (optional)
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Mot de passe (optionnel)", fontFamily = DmSansFamily, color = SubtitleText, fontSize = 13.sp) },
+            placeholder = { Text("Généré automatiquement si vide", fontFamily = DmSansFamily, color = SubtitleText.copy(alpha = 0.6f), fontSize = 13.sp) },
+            textStyle = TextStyle(fontFamily = DmSansFamily, fontSize = 16.sp, color = DarkText),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (passwordVisible) "Masquer" else "Afficher",
+                        tint = SubtitleText,
+                    )
+                }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = fieldColors(),
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -142,8 +205,15 @@ fun JoinScreen(viewModel: AuthViewModel = viewModel()) {
         Spacer(Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.joinColocation(inviteCode.trim()) },
-            enabled = !isJoinLoading && inviteCode.isNotBlank(),
+            onClick = {
+                viewModel.joinColocation(
+                    inviteCode = inviteCode.trim(),
+                    name = name.trim(),
+                    email = email.trim(),
+                    password = password.ifBlank { null },
+                )
+            },
+            enabled = canSubmit,
             modifier = Modifier.fillMaxWidth().height(54.dp),
             shape = RoundedCornerShape(18.dp),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp, pressedElevation = 2.dp),
@@ -162,3 +232,14 @@ fun JoinScreen(viewModel: AuthViewModel = viewModel()) {
         }
     }
 }
+
+@Composable
+private fun fieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = CardBackground,
+    unfocusedContainerColor = CardBackground,
+    focusedBorderColor = GreenPrimary,
+    unfocusedBorderColor = BorderColor,
+    cursorColor = GreenPrimary,
+    focusedLabelColor = GreenPrimary,
+    unfocusedLabelColor = SubtitleText,
+)

@@ -4,7 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-private val CagnotteColorScheme = lightColorScheme(
+private val HabizyColorScheme = lightColorScheme(
     primary = GreenPrimary,
     onPrimary = CardBackground,
     primaryContainer = GreenBadgeBg,
@@ -30,12 +30,12 @@ private val CagnotteColorScheme = lightColorScheme(
 )
 
 @Composable
-fun CagnotteTheme(
+fun HabizyTheme(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = CagnotteColorScheme,
-        typography = CagnotteTypography,
+        colorScheme = HabizyColorScheme,
+        typography = HabizyTypography,
         content = content,
     )
 }

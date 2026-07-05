@@ -54,11 +54,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun joinColocation(inviteCode: String) {
+    fun joinColocation(inviteCode: String, name: String, email: String, password: String?) {
         viewModelScope.launch {
             _isJoinLoading.value = true
             _joinError.value = null
-            val result = authRepository.joinColocation(inviteCode)
+            val result = authRepository.joinColocation(inviteCode, name, email, password)
             result.onFailure { e ->
                 _joinError.value = e.userMessage()
             }

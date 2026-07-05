@@ -7,7 +7,7 @@ import androidx.core.content.getSystemService
 
 /**
  * Creates the app's notification channel.
- * Must be called once early in the app lifecycle (from [com.habizy.app.CagnotteApp.onCreate]).
+ * Must be called once early in the app lifecycle (from [com.habizy.app.HabizyApp.onCreate]).
  */
 object NotificationChannelHelper {
 

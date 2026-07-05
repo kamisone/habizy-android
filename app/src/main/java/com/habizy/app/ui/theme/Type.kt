@@ -32,7 +32,7 @@ val DmSansFamily = FontFamily(
     Font(googleFont = dmSansFont, fontProvider = googleFontProvider, weight = FontWeight.Bold),
 )
 
-val CagnotteTypography = Typography(
+val HabizyTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FredokaFamily,
         fontWeight = FontWeight.Bold,

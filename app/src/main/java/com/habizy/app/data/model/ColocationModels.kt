@@ -7,7 +7,10 @@ data class CreateColocationRequest(
 )
 
 data class JoinColocationRequest(
-    val inviteCode: String
+    val inviteCode: String,
+    val name: String,
+    val email: String,
+    val password: String? = null
 )
 
 data class UpdateColocationRequest(

@@ -21,7 +21,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.habizy.app.ui.navigation.AppNavigation
 import com.habizy.app.ui.screens.AppSplashScreen
-import com.habizy.app.ui.theme.CagnotteTheme
+import com.habizy.app.ui.theme.HabizyTheme
 import com.habizy.app.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.delay
 
@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         handleDeepLinkIntent(intent)
 
         setContent {
-            CagnotteTheme {
+            HabizyTheme {
                 val isLoggedIn by authViewModel.isLoggedIn.collectAsStateWithLifecycle(initialValue = false)
                 val profileCompleted by authViewModel.profileCompleted.collectAsStateWithLifecycle(initialValue = null)
                 var showSplash by remember { mutableStateOf(true) }
