@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,14 +26,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -73,7 +76,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.habizy.app.data.local.TokenManager
 import com.habizy.app.data.model.MarkMenageDoneRequest
 import com.habizy.app.data.model.MenageBoardMember
+import com.habizy.app.data.model.MenageSubTask
+import com.habizy.app.data.model.MenageSubTaskRequest
 import com.habizy.app.data.model.MenageWeekResponse
+import com.habizy.app.data.model.UpdateSubTaskLimitRequest
 import com.habizy.app.data.model.UpdateTaskDescriptionRequest
 import com.habizy.app.data.remote.ApiClient
 import com.habizy.app.ui.components.RoommateAvatar
@@ -97,6 +103,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
 import com.habizy.app.util.userMessage
+
+const val DEFAULT_MENAGE_SUB_TASK_LIMIT = 10
+private const val MAX_MENAGE_SUB_TASK_LENGTH = 60
 
 // ── Inline ViewModel ──
 
@@ -169,6 +178,19 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun addSubTask(text: String) {
+        viewModelScope.launch {
+            try {
+                val colocationId = tokenManager.getColocationId()
+                    ?: throw Exception("Colocation introuvable")
+                api.addMenageSubTask(colocationId, MenageSubTaskRequest(text.trim()))
+                load()
+            } catch (e: Exception) {
+                _errorMessage.value = e.userMessage()
+            }
+        }
+    }
+
     fun undoDone() {
         viewModelScope.launch {
             try {
@@ -188,6 +210,19 @@ class MenageViewModel(application: Application) : AndroidViewModel(application) 
                 val colocationId = tokenManager.getColocationId()
                     ?: throw Exception("Colocation introuvable")
                 api.updateMenageTaskDescription(colocationId, UpdateTaskDescriptionRequest(description))
+                load()
+            } catch (e: Exception) {
+                _errorMessage.value = e.userMessage()
+            }
+        }
+    }
+
+    fun updateSubTaskLimit(limit: Int) {
+        viewModelScope.launch {
+            try {
+                val colocationId = tokenManager.getColocationId()
+                    ?: throw Exception("Colocation introuvable")
+                api.updateMenageSubTaskLimit(colocationId, UpdateSubTaskLimitRequest(limit))
                 load()
             } catch (e: Exception) {
                 _errorMessage.value = e.userMessage()
@@ -228,6 +263,36 @@ private fun formatWeekStart(weekStart: String): String {
 }
 
 private val dayLabels = listOf("Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim")
+private val fullDayLabels = listOf("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche")
+
+/** Format an ISO-8601 instant string as a local "HH:mm" time, or null if unparsable. */
+private fun formatSubTaskTime(iso: String): String? {
+    return try {
+        java.time.Instant.parse(iso)
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofPattern("HH:mm"))
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/** Groups sub-tasks by the local day they were completed on, ordered Mon..Sun. */
+private fun groupSubTasksByDay(subTasks: List<MenageSubTask>): List<Pair<String, List<MenageSubTask>>> {
+    val byDay = mutableMapOf<Int, MutableList<MenageSubTask>>()
+    for (subTask in subTasks) {
+        try {
+            val dayIndex = java.time.Instant.parse(subTask.completedAt)
+                .atZone(java.time.ZoneId.systemDefault())
+                .dayOfWeek.value - 1 // Monday=0 .. Sunday=6
+            byDay.getOrPut(dayIndex) { mutableListOf() }.add(subTask)
+        } catch (_: Exception) {
+            // ignore parse errors
+        }
+    }
+    return byDay.toSortedMap().mapNotNull { (dayIndex, tasks) ->
+        fullDayLabels.getOrNull(dayIndex)?.let { it to tasks }
+    }
+}
 
 // ── Screen ──
 
@@ -254,8 +319,12 @@ fun MenageScreen() {
 
     var showCommentSheet by remember { mutableStateOf(false) }
     var commentText by remember { mutableStateOf("") }
+    var showAddSubTaskSheet by remember { mutableStateOf(false) }
+    var newSubTaskText by remember { mutableStateOf("") }
     var showEditTaskSheet by remember { mutableStateOf(false) }
     var editTaskText by remember { mutableStateOf("") }
+    var showEditSubTaskLimitSheet by remember { mutableStateOf(false) }
+    var editSubTaskLimitText by remember { mutableStateOf("") }
 
     // Derive state from weekData
     val data = weekData
@@ -597,6 +666,82 @@ fun MenageScreen() {
                         }
                     }
 
+                    // ── Add sub-task CTA (any tenant, any time; optional, decoupled from the mandatory "J'ai fait le ménage" action) ──
+                    val subTaskLimit = data.subTaskLimit
+                    val mySubTaskCount = myEntry?.subTasks?.size ?: 0
+                    val subTaskCapReached = mySubTaskCount >= subTaskLimit
+                    val canAddSubTask = !subTaskCapReached
+                    val addSubTaskLabel = if (subTaskCapReached) {
+                        "Maximum de $subTaskLimit sous-tâches atteint"
+                    } else {
+                        "Ajouter une sous-tâche accomplie"
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (canAddSubTask) GreenPrimary.copy(alpha = 0.08f) else LightCardBg)
+                            .border(
+                                width = 1.dp,
+                                color = if (canAddSubTask) GreenPrimary.copy(alpha = 0.35f) else BorderColor,
+                                shape = RoundedCornerShape(16.dp),
+                            )
+                            .clickable(enabled = canAddSubTask) {
+                                newSubTaskText = ""
+                                showAddSubTaskSheet = true
+                            }
+                            .padding(vertical = 14.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = if (canAddSubTask) GreenPrimary else SubtitleText,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = addSubTaskLabel,
+                            fontFamily = FredokaFamily,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            color = if (canAddSubTask) GreenPrimary else SubtitleText,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+
+                    if (isAdmin) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    editSubTaskLimitText = subTaskLimit.toString()
+                                    showEditSubTaskLimitSheet = true
+                                }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Modifier la limite de sous-tâches",
+                                tint = SubtitleText,
+                                modifier = Modifier.size(12.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Limite : $subTaskLimit sous-tâches / semaine",
+                                fontFamily = DmSansFamily,
+                                fontSize = 11.sp,
+                                color = SubtitleText,
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(20.dp))
                 }
 
@@ -617,6 +762,19 @@ fun MenageScreen() {
                         }
                     }
 
+                    // Build map of dayIndex -> number of sub-tasks completed that day (any tenant)
+                    val subTaskCountByDay = mutableMapOf<Int, Int>()
+                    for (member in board) {
+                        member.subTasks?.forEach { subTask ->
+                            try {
+                                val dayIdx = getDayOfWeek(subTask.completedAt.take(10))
+                                subTaskCountByDay[dayIdx] = (subTaskCountByDay[dayIdx] ?: 0) + 1
+                            } catch (_: Exception) {
+                                // ignore parse errors
+                            }
+                        }
+                    }
+
                     // Row 1: Mon-Thu
                     Row(
                         modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
@@ -628,6 +786,7 @@ fun MenageScreen() {
                                 dateNumber = weekDates[i],
                                 isToday = isToday(data.weekStart, i),
                                 doneMember = doneMemberByDay[i],
+                                subTaskCount = subTaskCountByDay[i] ?: 0,
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                             )
                         }
@@ -644,6 +803,7 @@ fun MenageScreen() {
                                 dateNumber = weekDates[i],
                                 isToday = isToday(data.weekStart, i),
                                 doneMember = doneMemberByDay[i],
+                                subTaskCount = subTaskCountByDay[i] ?: 0,
                                 modifier = Modifier.weight(1f).fillMaxHeight(),
                             )
                         }
@@ -675,58 +835,109 @@ fun MenageScreen() {
                             Spacer(modifier = Modifier.height(12.dp))
 
                             board.forEach { member ->
-                                Row(
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    RoommateAvatar(
-                                        colorHex = member.colorHex ?: "#888888",
-                                        initial = member.initial ?: member.name.take(1).uppercase(),
-                                        size = 38.dp,
-                                        cornerRadius = 13.dp,
-                                        fontSize = 15.sp,
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = member.name,
-                                        fontFamily = DmSansFamily,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 15.sp,
-                                        color = DarkText,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    // Badge
-                                    if (member.done) {
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .background(GreenPrimary.copy(alpha = 0.12f))
-                                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                                        ) {
-                                            Text(
-                                                text = "Fait",
-                                                fontFamily = DmSansFamily,
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 12.sp,
-                                                color = GreenPrimary,
-                                            )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        RoommateAvatar(
+                                            colorHex = member.colorHex ?: "#888888",
+                                            initial = member.initial ?: member.name.take(1).uppercase(),
+                                            size = 38.dp,
+                                            cornerRadius = 13.dp,
+                                            fontSize = 15.sp,
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = member.name,
+                                            fontFamily = DmSansFamily,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 15.sp,
+                                            color = DarkText,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        // Badge
+                                        if (member.done) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(GreenPrimary.copy(alpha = 0.12f))
+                                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                            ) {
+                                                Text(
+                                                    text = "Fait le ménage",
+                                                    fontFamily = DmSansFamily,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 12.sp,
+                                                    color = GreenPrimary,
+                                                )
+                                            }
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .background(LightCardBg)
+                                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                                            ) {
+                                                Text(
+                                                    text = "En attente",
+                                                    fontFamily = DmSansFamily,
+                                                    fontWeight = FontWeight.Medium,
+                                                    fontSize = 12.sp,
+                                                    color = SubtitleText,
+                                                )
+                                            }
                                         }
-                                    } else {
-                                        Box(
+                                    }
+
+                                    if (!member.subTasks.isNullOrEmpty()) {
+                                        Column(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(10.dp))
-                                                .background(LightCardBg)
-                                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                                                .fillMaxWidth()
+                                                .padding(start = 50.dp, top = 6.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp),
                                         ) {
-                                            Text(
-                                                text = "En attente",
-                                                fontFamily = DmSansFamily,
-                                                fontWeight = FontWeight.Medium,
-                                                fontSize = 12.sp,
-                                                color = SubtitleText,
-                                            )
+                                            groupSubTasksByDay(member.subTasks).forEach { (dayLabel, tasks) ->
+                                                Column(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(14.dp))
+                                                        .border(
+                                                            width = 1.dp,
+                                                            color = Purple.copy(alpha = 0.25f),
+                                                            shape = RoundedCornerShape(14.dp),
+                                                        )
+                                                        .padding(10.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                                ) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(8.dp))
+                                                            .background(Purple.copy(alpha = 0.14f))
+                                                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                                                    ) {
+                                                        Text(
+                                                            text = dayLabel,
+                                                            fontFamily = FredokaFamily,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 11.sp,
+                                                            color = Purple,
+                                                        )
+                                                    }
+                                                    FlowRow(
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                                    ) {
+                                                        tasks.forEach { subTask ->
+                                                            SubTaskChip(subTask)
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -836,6 +1047,179 @@ fun MenageScreen() {
         }
     }
 
+    // ── Add sub-task bottom sheet ──
+    if (showAddSubTaskSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showAddSubTaskSheet = false },
+            sheetState = sheetState,
+            containerColor = CardBackground,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+            ) {
+                Text(
+                    text = "Ajouter une sous-tâche accomplie",
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = DarkText,
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = newSubTaskText,
+                    onValueChange = { if (it.length <= MAX_MENAGE_SUB_TASK_LENGTH) newSubTaskText = it },
+                    placeholder = {
+                        Text(
+                            text = "Ex: Nettoyé les vitres",
+                            fontFamily = DmSansFamily,
+                            color = SubtitleText,
+                        )
+                    },
+                    textStyle = TextStyle(
+                        fontFamily = DmSansFamily,
+                        fontSize = 15.sp,
+                        color = DarkText,
+                    ),
+                    supportingText = {
+                        Text(
+                            text = "${newSubTaskText.length}/$MAX_MENAGE_SUB_TASK_LENGTH",
+                            fontFamily = DmSansFamily,
+                            fontSize = 12.sp,
+                            color = SubtitleText,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = CardBackground,
+                        unfocusedContainerColor = CardBackground,
+                        focusedBorderColor = GreenPrimary,
+                        unfocusedBorderColor = BorderColor,
+                        cursorColor = GreenPrimary,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(18.dp))
+                Button(
+                    onClick = {
+                        viewModel.addSubTask(newSubTaskText)
+                        showAddSubTaskSheet = false
+                    },
+                    enabled = newSubTaskText.isNotBlank(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenPrimary,
+                        contentColor = Color.White,
+                        disabledContainerColor = GreenPrimary.copy(alpha = 0.5f),
+                        disabledContentColor = Color.White.copy(alpha = 0.7f),
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                ) {
+                    Text(
+                        text = "Ajouter",
+                        fontFamily = FredokaFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                    )
+                }
+            }
+        }
+    }
+
+    // ── Edit sub-task limit bottom sheet (admin) ──
+    if (showEditSubTaskLimitSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showEditSubTaskLimitSheet = false },
+            sheetState = sheetState,
+            containerColor = CardBackground,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+            ) {
+                Text(
+                    text = "Limite de sous-tâches",
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp,
+                    color = DarkText,
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Nombre maximum de sous-tâches par colocataire et par semaine",
+                    fontFamily = DmSansFamily,
+                    fontSize = 12.sp,
+                    color = SubtitleText,
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = editSubTaskLimitText,
+                    onValueChange = { newValue ->
+                        if (newValue.length <= 3 && newValue.all { it.isDigit() }) {
+                            editSubTaskLimitText = newValue
+                        }
+                    },
+                    textStyle = TextStyle(
+                        fontFamily = DmSansFamily,
+                        fontSize = 15.sp,
+                        color = DarkText,
+                    ),
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = CardBackground,
+                        unfocusedContainerColor = CardBackground,
+                        focusedBorderColor = GreenPrimary,
+                        unfocusedBorderColor = BorderColor,
+                        cursorColor = GreenPrimary,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(18.dp))
+                Button(
+                    onClick = {
+                        val limit = editSubTaskLimitText.toIntOrNull()
+                        if (limit != null && limit in 1..50) {
+                            viewModel.updateSubTaskLimit(limit)
+                            showEditSubTaskLimitSheet = false
+                        }
+                    },
+                    enabled = (editSubTaskLimitText.toIntOrNull() ?: 0) in 1..50,
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GreenPrimary,
+                        contentColor = Color.White,
+                        disabledContainerColor = GreenPrimary.copy(alpha = 0.5f),
+                        disabledContentColor = Color.White.copy(alpha = 0.7f),
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                ) {
+                    Text(
+                        text = "Enregistrer",
+                        fontFamily = FredokaFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                    )
+                }
+            }
+        }
+    }
+
     // ── Edit task bottom sheet (admin) ──
     if (showEditTaskSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -921,84 +1305,150 @@ private fun DayCell(
     dateNumber: Int,
     isToday: Boolean,
     doneMember: MenageBoardMember?,
+    subTaskCount: Int = 0,
     modifier: Modifier = Modifier,
 ) {
+    val hasSubTasks = subTaskCount > 0
     val borderColor = when {
         isToday -> GreenPrimary
+        hasSubTasks -> Purple.copy(alpha = 0.55f)
         doneMember != null -> GreenPrimary.copy(alpha = 0.4f)
         else -> BorderColor
     }
+    val borderWidth = if (isToday || hasSubTasks) 2.dp else 1.dp
     val bgColor = when {
+        hasSubTasks -> Purple.copy(alpha = 0.07f)
         doneMember != null -> GreenPrimary.copy(alpha = 0.06f)
         else -> CardBackground
     }
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .border(
-                width = if (isToday) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(18.dp),
-            )
-            .background(bgColor)
-            .padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top,
-    ) {
-        Text(
-            text = dayLabel,
-            fontFamily = DmSansFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 11.sp,
-            color = if (isToday) GreenPrimary else SubtitleText,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Box(
+    Box(modifier = modifier) {
+        Column(
             modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(if (isToday) GreenPrimary else Color.Transparent),
-            contentAlignment = Alignment.Center,
+                .fillMaxSize()
+                .clip(RoundedCornerShape(18.dp))
+                .border(
+                    width = borderWidth,
+                    color = borderColor,
+                    shape = RoundedCornerShape(18.dp),
+                )
+                .background(bgColor)
+                .padding(vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
         ) {
             Text(
-                text = "$dateNumber",
-                fontFamily = FredokaFamily,
-                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
-                fontSize = 14.sp,
-                color = if (isToday) Color.White else DarkText,
-            )
-        }
-
-        if (doneMember != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            RoommateAvatar(
-                colorHex = doneMember.colorHex ?: "#888888",
-                initial = doneMember.initial ?: doneMember.name.take(1).uppercase(),
-                size = 28.dp,
-                cornerRadius = 10.dp,
-                fontSize = 12.sp,
+                text = dayLabel,
+                fontFamily = DmSansFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 11.sp,
+                color = if (isToday) GreenPrimary else SubtitleText,
             )
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = doneMember.name.split(" ").first(),
-                fontFamily = DmSansFamily,
-                fontSize = 10.sp,
-                color = DarkText,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!doneMember.comment.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(2.dp))
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(if (isToday) GreenPrimary else Color.Transparent),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    text = doneMember.comment,
-                    fontFamily = DmSansFamily,
-                    fontSize = 9.sp,
-                    color = SubtitleText,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 4.dp),
+                    text = "$dateNumber",
+                    fontFamily = FredokaFamily,
+                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = if (isToday) Color.White else DarkText,
                 )
             }
+
+            if (doneMember != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                RoommateAvatar(
+                    colorHex = doneMember.colorHex ?: "#888888",
+                    initial = doneMember.initial ?: doneMember.name.take(1).uppercase(),
+                    size = 28.dp,
+                    cornerRadius = 10.dp,
+                    fontSize = 12.sp,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = doneMember.name.split(" ").first(),
+                    fontFamily = DmSansFamily,
+                    fontSize = 10.sp,
+                    color = DarkText,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (!doneMember.comment.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = doneMember.comment,
+                        fontFamily = DmSansFamily,
+                        fontSize = 9.sp,
+                        color = SubtitleText,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                    )
+                }
+            }
+        }
+
+        if (hasSubTasks) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 6.dp, y = (-6).dp)
+                    .size(20.dp)
+                    .shadow(3.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(Purple),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "$subTaskCount",
+                    fontFamily = FredokaFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp,
+                    color = Color.White,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubTaskChip(subTask: MenageSubTask, modifier: Modifier = Modifier) {
+    val time = formatSubTaskTime(subTask.completedAt)
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(GreenPrimary.copy(alpha = 0.08f))
+            .border(1.dp, GreenPrimary.copy(alpha = 0.16f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.TaskAlt,
+            contentDescription = null,
+            tint = GreenPrimary,
+            modifier = Modifier.size(13.dp),
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(
+            text = subTask.text,
+            fontFamily = DmSansFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
+            color = DarkText,
+        )
+        if (time != null) {
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = time,
+                fontFamily = DmSansFamily,
+                fontSize = 10.sp,
+                color = SubtitleText,
+            )
         }
     }
 }

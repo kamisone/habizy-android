@@ -235,6 +235,12 @@ interface ApiService {
         @Body body: MarkMenageDoneRequest
     )
 
+    @POST("menage/{colocationId}/sub-tasks")
+    suspend fun addMenageSubTask(
+        @Path("colocationId") colocationId: String,
+        @Body body: MenageSubTaskRequest
+    )
+
     @DELETE("menage/{colocationId}/done")
     suspend fun undoMenageDone(
         @Path("colocationId") colocationId: String
@@ -244,6 +250,12 @@ interface ApiService {
     suspend fun updateMenageTaskDescription(
         @Path("colocationId") colocationId: String,
         @Body body: UpdateTaskDescriptionRequest
+    )
+
+    @PATCH("menage/{colocationId}/sub-task-limit")
+    suspend fun updateMenageSubTaskLimit(
+        @Path("colocationId") colocationId: String,
+        @Body body: UpdateSubTaskLimitRequest
     )
 }
 
