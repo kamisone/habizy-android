@@ -49,7 +49,7 @@ android {
             ndk {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }
-            buildConfigField("String", "BASE_URL", "\"https://silomis.com/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://habizy.com/api/\"")
         }
     }
 
