@@ -48,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -112,14 +113,24 @@ fun HomeScreen(
     onNavigateToReportDetail: (String) -> Unit,
 ) {
     val viewModel: HomeViewModel = viewModel()
-    val state by viewModel.state.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    // Deliberately NOT lifecycle-aware: after an interrupted nav transition the Home
+    // back-stack entry can stay stuck below STARTED while its UI is still visible and
+    // touchable. collectAsStateWithLifecycle() then pauses, so a pull-to-refresh runs
+    // the network calls but the screen never shows the result and the indicator stays
+    // pinned. Plain collectAsState() keeps the visible UI in sync with the ViewModel.
+    val state by viewModel.state.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner.lifecycle) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             viewModel.silentRefresh()
         }
+    }
+    // Also refresh whenever Home re-enters composition (covers the stuck-entry case
+    // where RESUMED is never reached and the block above never fires).
+    LaunchedEffect(Unit) {
+        viewModel.silentRefresh()
     }
 
     Box(
